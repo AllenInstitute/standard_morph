@@ -1,7 +1,7 @@
 # Standard Morph
 
 
-Standard Morph is a Python library designed for processing and validating SWC files. It provides tools for standardizing SWC structures and generating quality control (QC) reports. Future direction will include integration with backend databases
+Standard Morph is a Python library designed for processing and validating SWC files. It provides tools for standardizing SWC structures and generating quality control (QC) reports. Future direction will include integration with backend databases. 
 
 
 # Installation
