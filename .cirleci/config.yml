@@ -1,0 +1,28 @@
+version: 2.1
+jobs:
+
+  install_and_run_tests:
+    docker:
+      - image: continuumio/miniconda3:4.7.12
+    resource_class: large
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: create conda env
+          command: |
+            conda create -n build_env python=3.9 
+            source activate build_env
+            pip install -r requirements.txt
+            pip install .
+      - run:
+          name: run tests
+          command: |
+            source activate build_env
+            set -e 
+            pytest tests --tb=no
+
+workflows:
+  test-install:
+    jobs:
+      - install_and_run_tests

@@ -1,3 +1,7 @@
+# uncomment when ready to start version increasing (i.e. stable 0.0.1)
+.github/*
+.bumpversion.cfg
+
 standard_morph/__pycache__/**
 *.pyc
 *.ipynb

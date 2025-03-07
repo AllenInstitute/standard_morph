@@ -1,4 +1,3 @@
-from scipy.spatial.distance import euclidean
 import re
 import math
 import os
@@ -43,7 +42,8 @@ import warnings
 #         --keep, programatic fix
     
 #     """
-    
+def euclidean_distance(x, y):
+    return sum((a - b) ** 2 for a, b in zip(x, y)) ** 0.5
      
 def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
     """
@@ -87,7 +87,7 @@ def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
             soma_children_furcation_test['node_ids_with_error'] = problem_children_brnching.node_id.tolist()
         
         soma_coord = [soma_df['x'].values[0], soma_df['y'].values[0], soma_df['z'].values[0]]
-        soma_children_df['distance_from_soma'] = soma_children_df.apply(lambda rw: euclidean([rw.x, rw.y, rw.z], soma_coord), axis=1)
+        soma_children_df['distance_from_soma'] = soma_children_df.apply(lambda rw: euclidean_distance([rw.x, rw.y, rw.z], soma_coord), axis=1)
         problem_children_distance = soma_children_df[soma_children_df['distance_from_soma'] > soma_child_distance_threshold]
         if not problem_children_distance.empty:
             soma_children_distance_test['node_ids_with_error'] = problem_children_distance.node_id.tolist()
