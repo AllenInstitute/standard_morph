@@ -10,9 +10,9 @@ coming soon:
 pip install standard-morph  
 
 For now:  
-git clone https://github.com/AllenInstitute/standard_morph.git
-cd standard_morph  
-pip install .  
+git clone https://github.com/AllenInstitute/standard_morph.git   
+cd standard_morph    
+pip install .   
 
 
 # Usage
