@@ -1,1 +1,2 @@
-__version__ = "0.0.1"
+from setuptools_scm import get_version
+__version__ = get_version()

@@ -13,6 +13,9 @@ dependencies = [
     "pandas",
 ]
 
+[tool.setuptools_scm]
+version_file = "standard_morph/__init__.py"
+
 [tool.setuptools.packages.find]
 where = ["."]  
 
