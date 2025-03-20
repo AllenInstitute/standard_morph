@@ -10,10 +10,8 @@ coming soon:
 pip install standard-morph  
 
 For now:  
-git clone  
-
+git clone https://github.com/AllenInstitute/standard_morph.git
 cd standard_morph  
-pip install -r requirements.txt  
 pip install .  
 
 
@@ -51,7 +49,7 @@ print(worker.StandardizationReport)
 {
   'input_file': './scratchfiles/1311509665_TT.ano.swc',
   'StandardMorphVersion': '0.0.1',
-  'path_to_mip': None
+  'path_to_mip': None,
   "errors": [
     {
       "test": "SomaChildrenFurcation",
