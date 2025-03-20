@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "setuptools-scm"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "standard_morph"
-dynamic = ["version"] 
+version = "0.1.0"
 description = "Standardizing morphologies"
 readme = "README.md"
 authors = [{ name = "Matthew Mallory", email = "matt.mallory@alleninstitute.org" }]
@@ -12,9 +12,6 @@ license = { text = "MIT" }
 dependencies = [
     "pandas",
 ]
-
-[tool.setuptools_scm]
-version_file = "standard_morph/__init__.py"
 
 [tool.setuptools.packages.find]
 where = ["."]  
