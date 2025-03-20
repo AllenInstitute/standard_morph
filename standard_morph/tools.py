@@ -180,7 +180,7 @@ def check_cycles_and_topological_sort(df, child_dict):
         child_dict (dict): for each node id in df, stores a list of their children
 
     Returns:
-        tuple: (bool, dict) True/False if loops detected, node mapping for sorted nodes
+        tuple: (dict, dict) QC Report, node mapping for sorted nodes
     """
     report = {
         "test": "CheckForLoops",

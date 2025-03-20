@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+name = "standard_morph"
+description = "Standardizing morphologies"
+readme = "README.md"
+authors = [
+    { name = "Matthew Mallory", email = "matt.mallory@alleninstitute.org" }
+]
+license = { text = "MIT" }
+dependencies = [
+    "some_package",  # Replace with actual dependencies from requirements.txt
+]
+
+[tool.setuptools]
+packages = ["pandas"]
+
+[project.optional-dependencies]
+SomaMip = ["imageio", "s3fs", "zarr", "skimage"]
+
+[tool.setuptools.package-data]
+"standard_morph" = ["*"]
+
+[project.urls]
+Homepage = "https://github.com/AllenInstitute/standard_morph"
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+testpaths = ["tests"]

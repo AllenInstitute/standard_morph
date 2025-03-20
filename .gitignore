@@ -12,6 +12,7 @@ standard_morph/__pycache__/**
 .vscode/
 *.pytest_cache
 
+scratchfiles/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

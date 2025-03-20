@@ -49,7 +49,7 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
 
     def test_valid_graph(self):
         """Test that a valid acyclic graph returns a correct DFS-based topological sorting."""
-        has_cycle, node_mapping = check_cycles_and_topological_sort(self.df_valid, self.child_dict_valid)
+        cycle_report, node_mapping = check_cycles_and_topological_sort(self.df_valid, self.child_dict_valid)
         
         self.assertEqual(cycle_report['node_ids_with_error'], None,  "Expected no cycles in the valid graph.")
         self.assertEqual(set(node_mapping.keys()), set(self.df_valid["node_id"]), "Node IDs should match.")
