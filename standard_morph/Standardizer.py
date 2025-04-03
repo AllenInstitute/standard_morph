@@ -1,5 +1,7 @@
 import os
 import pandas as pd
+import re
+from pathlib import Path
 from collections import defaultdict
 from standard_morph.tools import (soma_and_soma_children_qc, 
                                   axon_origination_qc, 
@@ -16,11 +18,20 @@ def apply_casts(df, casts):
 
 
 def get_version():
-    with open("standard_morph/__init__.py") as f:
+
+    base_dir = Path(__file__).resolve().parents[1]  
+    pyproject_path = base_dir / "pyproject.toml" 
+        
+    if not pyproject_path.exists():
+        raise FileNotFoundError(f"Could not find pyproject.toml at {pyproject_path}")
+    
+    with pyproject_path.open("r", encoding="utf-8") as f:
         for line in f:
-            if line.startswith("__version__"):
-                version = line.split('"')[1]
-    return version
+            match = re.match(r'version\s*=\s*"(.*?)"', line)
+            if match:
+                return match.group(1)
+    
+    raise ValueError("Version not found in pyproject.toml")
 
 
 class Standardizer():
