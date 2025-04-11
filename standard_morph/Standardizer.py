@@ -3,176 +3,186 @@ import pandas as pd
 import re
 from pathlib import Path
 from collections import defaultdict
-from standard_morph.tools import (soma_and_soma_children_qc, 
-                                  axon_origination_qc, 
-                                  dendrite_origins_qc,
-                                  orphan_node_check, 
-                                  check_cycles_and_topological_sort,
-                                  has_valid_name,
-                                  get_soma_mip)
+from typing import Optional
+from enum import Enum
 
+from standard_morph.tools import (
+    soma_and_soma_children_qc,
+    axon_origination_qc,
+    dendrite_origins_qc,
+    orphan_node_check,
+    check_cycles_and_topological_sort,
+    has_valid_name,
+    get_soma_mip,
+)
+
+SWC_COLUMN_NAMES = ['node_id', 'compartment', 'x', 'y', 'z', 'r', 'parent']
 COLUMN_CASTS = {"node_id": int, "parent": int, "compartment": int}
+
+
+class FilenameFormat(str, Enum):
+    NONE = "None"
+    AIND = "AIND"
+    AIBS = "AIBS"
+
+
 def apply_casts(df, casts):
     for key, typ in casts.items():
         df[key] = df[key].astype(typ)
 
 
 def get_version():
+    base_dir = Path(__file__).resolve().parents[1]
+    pyproject_path = base_dir / "pyproject.toml"
 
-    base_dir = Path(__file__).resolve().parents[1]  
-    pyproject_path = base_dir / "pyproject.toml" 
-        
     if not pyproject_path.exists():
         raise FileNotFoundError(f"Could not find pyproject.toml at {pyproject_path}")
-    
+
     with pyproject_path.open("r", encoding="utf-8") as f:
         for line in f:
             match = re.match(r'version\s*=\s*"(.*?)"', line)
             if match:
                 return match.group(1)
-    
+
     raise ValueError("Version not found in pyproject.toml")
 
 
-class Standardizer():
-    
-    def __init__(self,
-                 path_to_swc: str, 
-                 soma_children_distance_threshold: float = 50,
-                 swc_separator: str = ' ',
-                 valid_filename_format: str = 'None',
-                 soma_mip_kwargs: dict = {},
-                 ):
-        """Class for runing swc standardization
+class Standardizer:
+
+    def __init__(
+        self,
+        path_to_swc: Optional[str] = None,
+        input_morphology_df: Optional[pd.DataFrame] = None,
+        soma_children_distance_threshold: float = 50,
+        swc_separator: str = ' ',
+        valid_filename_format: FilenameFormat = FilenameFormat.NONE,
+        soma_mip_kwargs: dict = None,
+    ):
+        """
+        Class for running SWC standardization.
 
         Args:
-            path_to_swc (str): path to swc file
-            
-            soma_children_distance_threshold (float, optional): maximum distance a soma child can be from the soma. Defaults to 50.
-            
-            swc_separator (str, optional): Column separator in the swc file. Defaults to ' '.
-            
-            valid_filename_format (str, optional): choose from ['AIND', 'AIBS', 'None']. When 'None', will not run file name formatting chcek.
-            Defaults to 'None'.
-            
-            soma_mip_kwargs (dict, optional): keyword arguments for running get_soma_mip. When an empty dictionary
-            is passed, get_soma_mip will not be ran. See standard_morph.tools.get_soma_mip for kwargs. Defaults to {}.
-
-        Raises:
-            ValueError: _description_
+            path_to_swc (Optional[str]): Path to SWC file. Required if no dataframe is passed.
+            input_morphology_df (Optional[pd.DataFrame]): Input morphology dataframe.
+            soma_children_distance_threshold (float): Distance threshold for soma children.
+            swc_separator (str): Column separator in SWC file.
+            valid_filename_format (FilenameFormat): Filename format validation option.
+            soma_mip_kwargs (dict): Keyword arguments for get_soma_mip function.
         """
-
-        
-        if not isinstance(path_to_swc, str):
-            type_given = type(path_to_swc)
-            err_msg = f"Expected path_to_swc to be a string, but received a {type_given}"
-            raise ValueError(err_msg)
-        
         self.path_to_swc = path_to_swc
+        self.input_morphology_df = input_morphology_df
         self.separator = swc_separator
         self.valid_filename_format = valid_filename_format
-        self.soma_mip_kwargs = soma_mip_kwargs
+        self.soma_mip_kwargs = soma_mip_kwargs or {}
         self.soma_children_distance_threshold = soma_children_distance_threshold
-        self._validate_inputs()
-        self.load_swc()
-        report = {
-            "errors":[],
-            "input_file":path_to_swc,
-            "StandardMorphVersion":get_version(),
-            "path_to_mip":None
-        }
-        self.StandardizationReport = report
-        self.dfs_sorted_node_ids = []
-        
-    def _validate_inputs(self):
-        #TODO
-        # file_content = read_file(self.path_to_file)
-        # lines = file_content.splitlines()
 
-        # try:
-        #     file_content = read_file(self.path_to_file)
-        #     lines = file_content.splitlines()
-        # except Exception as e:
-        #     err_msg = f"Invalid SWC file: {self.path_to_file}"
-        #     raise ValueError(err_msg) from e
-        return True
-    
-    def load_swc(self):
+        self._validate_inputs()
+        self.load_data()
+        self.extract_node_relationships()
+
+        self.StandardizationReport = {
+            "errors": [],
+            "input_file": self.path_to_swc,
+            "StandardMorphVersion": get_version(),
+            "path_to_mip": None,
+        }
+
+    def _validate_inputs(self):
+        """Validate the inputs."""
+        if self.path_to_swc is not None and not isinstance(self.path_to_swc, str):
+            raise ValueError(f"Expected path_to_swc to be a string, got {type(self.path_to_swc)}")
+
+        if self.path_to_swc is None and self.input_morphology_df is None:
+            raise ValueError("Either path_to_swc or input_morphology_df is required.")
+
+        column_mapping = {"struct_type": "compartment", "parent_id": "parent", "radius":"r"}
+        if self.input_morphology_df is not None:
+            if not isinstance(self.input_morphology_df, pd.DataFrame):
+                raise ValueError(f"Expected input_morphology_df to be a pandas DataFrame, got {type(self.input_morphology_df)}")
+
+            self.input_morphology_df = self.input_morphology_df.rename(columns=column_mapping)
+            missing = [c for c in SWC_COLUMN_NAMES if c not in self.input_morphology_df.columns]
+            if missing:
+                raise ValueError(f"The following columns are required and missing: {missing}")
         
-        swc_df = pd.read_csv(self.path_to_swc,
+        if isinstance(self.valid_filename_format, str):
+            try:
+                valid_filename_format = FilenameFormat(self.valid_filename_format)
+            except ValueError:
+                raise ValueError(f"Invalid filename format: {self.valid_filename_format}. Must be one of: {[e.value for e in FilenameFormat]}")
+
+
+    def load_data(self):
+        """Assign input data (from either input df or SWC file) to _swc_df."""
+        if self.path_to_swc:
+            swc_df = pd.read_csv(
+                self.path_to_swc,
                 sep=self.separator,
                 comment='#',
                 header=None,
-                names=['node_id', 'compartment', 'x', 'y', 'z', 'r', 'parent'])
+                names=SWC_COLUMN_NAMES,
+            )
+        else:
+            swc_df = self.input_morphology_df.copy()
+
+        if swc_df.empty:
+            raise ValueError("Input dataframe is empty.")
+
+        self._swc_df = swc_df
+
+    def extract_node_relationships(self):
+        """
+        Compute structural relationships between nodes (e.g. child counts and parent node types).
+        """
+        swc_df = self._swc_df
         apply_casts(swc_df, casts=COLUMN_CASTS)
-        
-        parent_ids_dict = dict(zip(swc_df["node_id"], swc_df["parent"]))
-        child_ids_dict = defaultdict(list) #{ nid:[] for nid in parent_ids_dict }
-        for nid in parent_ids_dict:
-            pid = parent_ids_dict[nid]
+
+        node_ids = swc_df["node_id"].values
+        parent_ids = swc_df["parent"].values
+        self._parent_ids_dict = dict(zip(node_ids, parent_ids))
+
+        child_ids_dict = defaultdict(list)
+        for nid, pid in zip(node_ids, parent_ids):
             if pid != -1:
                 child_ids_dict[pid].append(nid)
-        
-        swc_df = swc_df.set_index("node_id")
-        swc_df['node_id'] = swc_df.index
-        
-        swc_df["number_of_children"] = swc_df.node_id.map(lambda x: len(child_ids_dict[x]))
-        
-
-        # this assumes all parent values are in the swc_df (i.e. no orphaned nodes)        
-        swc_df['parnet_node_type'] = swc_df.apply(lambda rw: swc_df.loc[rw['parent']]['compartment'] if (rw['parent']!=-1) and (rw['parent'] in swc_df.index.values) else None ,axis=1 )
-        
-        # create the child look up dictionary
         self._child_ids_dict = child_ids_dict
-        self._parent_ids_dict = parent_ids_dict
+
+        child_counts = {pid: len(children) for pid, children in child_ids_dict.items()}
+        swc_df["number_of_children"] = swc_df["node_id"].map(child_counts).fillna(0).astype(int)
+
+        swc_df = swc_df.set_index("node_id", drop=False)
+        swc_df["parent_node_type"] = swc_df["parent"].map(swc_df["compartment"])
+
         self.morph_df = swc_df
 
+    def _append_if_error(self, report):
+        """Append QC report if it contains errors."""
+        if report and report.get('node_ids_with_error') is not None:
+            self.StandardizationReport['errors'].append(report)
+
     def validate(self):
-        
-        # check soma and soma children
-        soma_and_ch_errors = soma_and_soma_children_qc(self.morph_df, self.soma_children_distance_threshold)
-        for s_ch_report in soma_and_ch_errors:
-            if s_ch_report['node_ids_with_error'] is not None:
-                self.StandardizationReport['errors'].append(s_ch_report) 
-                print("Found soma error")
-                
-        # axon origination QC
-        axon_origin_qc_report = axon_origination_qc(self.morph_df)
-        if axon_origin_qc_report['node_ids_with_error'] is not None:
-            self.StandardizationReport['errors'].append(axon_origin_qc_report) 
-        
-        # dendrite origination QC
-        dendrite_origin_qc_report = dendrite_origins_qc(self.morph_df)
-        if dendrite_origin_qc_report['node_ids_with_error'] is not None:
-            self.StandardizationReport['errors'].append(dendrite_origin_qc_report) 
-        
-        # orphan node QC
-        orphan_node_report = orphan_node_check(self.morph_df)
-        orphaned_node_bool = False
-        if orphan_node_report['node_ids_with_error'] is not None:
-            orphaned_node_bool = True
-            self.StandardizationReport['errors'].append(orphan_node_report) 
-        
-        # check for loops/cycles
-        cycle_error_report, sorted_node_id_dict = check_cycles_and_topological_sort(df=self.morph_df,
-                                                                                     child_dict = self._child_ids_dict)
-                
-        if cycle_error_report['node_ids_with_error']  is not None:
-            self.StandardizationReport['errors'].append(cycle_error_report) 
-        
-        self.sorted_node_id_dict = sorted_node_id_dict
-        if self.valid_filename_format != "None":
+        """Run validation checks and build the report."""
+        self._append_if_error(soma_and_soma_children_qc(self.morph_df, self.soma_children_distance_threshold))
+        self._append_if_error(axon_origination_qc(self.morph_df))
+        self._append_if_error(dendrite_origins_qc(self.morph_df))
+        self._append_if_error(orphan_node_check(self.morph_df))
+
+        cycle_report, sorted_nodes = check_cycles_and_topological_sort(
+            df=self.morph_df,
+            child_dict=self._child_ids_dict
+        )
+        self._append_if_error(cycle_report)
+        self.sorted_node_id_dict = sorted_nodes
+
+        if self.valid_filename_format != FilenameFormat.NONE and self.path_to_swc:
             filename = os.path.basename(self.path_to_swc)
-            filename_report = has_valid_name(filename)
-            if filename_report['node_ids_with_error'] is not None:
-                self.StandardizationReport['errors'].append(filename_report) 
-        
-        if self.soma_mip_kwargs != {}:
-            mip_kwargs = self.soma_mip_kwargs
-            mip_kwargs['morph_df'] = self.morph_df
-            mip_path = get_soma_mip(**mip_kwargs)   
-            self.StandardizationReport['path_to_mip'] = mip_path
-       
+            self._append_if_error(has_valid_name(filename))
+
+        if self.soma_mip_kwargs:
+            mip_path = get_soma_mip(morph_df=self.morph_df, **self.soma_mip_kwargs)
+            self.StandardizationReport["path_to_mip"] = mip_path
+
+
     def write_to_swc(self, output_swc_path):
         """write data to swc file
 
@@ -189,8 +199,7 @@ class Standardizer():
             output_df['node_id'] = output_df['node_id'].map(node_mapping)
             output_df['parent'] = output_df['parent'].map(node_mapping).fillna(-1)
         
-        keep_cols = ['node_id', 'compartment', 'x', 'y', 'z', 'r', 'parent']
-        output_df[keep_cols].to_csv(output_swc_path,
+        output_df[SWC_COLUMN_NAMES].to_csv(output_swc_path,
                                     sep=self.separator, 
                                     index=False, 
                                     header=None, 

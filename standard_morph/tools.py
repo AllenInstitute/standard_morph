@@ -112,10 +112,10 @@ def axon_origination_qc(df):
     }
     
     axon_df = df[df['compartment'] == 2]
-    axon_origination_df = axon_df[axon_df['parnet_node_type'] != 2]
+    axon_origination_df = axon_df[axon_df['parent_node_type'] != 2]
     num_axon_origination_places = axon_origination_df.shape[0]
     
-    if num_axon_origination_places != 1 or int(axon_origination_df['parnet_node_type'].values[0]) not in [1, 3]:
+    if num_axon_origination_places != 1 or int(axon_origination_df['parent_node_type'].values[0]) not in [1, 3]:
         axon_origination_error['node_ids_with_error'] = axon_origination_df.node_id.tolist()
     
     return axon_origination_error
@@ -137,7 +137,7 @@ def orphan_node_check(df):
         "node_ids_with_error": None
     }
     
-    orphaned_nodes = df[(df['parnet_node_type'].isnull()) & (df['parent'] != -1)]
+    orphaned_nodes = df[(df['parent_node_type'].isnull()) & (df['parent'] != -1)]
     if not orphaned_nodes.empty:
         orphaned_node_error['node_ids_with_error'] = orphaned_nodes.index.tolist()
     
@@ -158,8 +158,8 @@ def dendrite_origins_qc(df):
     invalid_dend_origins = []
     
     for comp, sub_df in dend_df.groupby("compartment"):
-        origins_df = sub_df[sub_df['parnet_node_type'] != comp]
-        invalid_origins = origins_df[origins_df['parnet_node_type'] != 1]
+        origins_df = sub_df[sub_df['parent_node_type'] != comp]
+        invalid_origins = origins_df[origins_df['parent_node_type'] != 1]
         invalid_dend_origins.extend(invalid_origins.node_id.tolist())
     
     if not invalid_dend_origins:
