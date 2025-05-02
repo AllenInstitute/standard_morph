@@ -45,7 +45,7 @@ import warnings
 def euclidean_distance(x, y):
     return sum((a - b) ** 2 for a, b in zip(x, y)) ** 0.5
      
-def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
+def soma_and_soma_children_qc(df, allow_soma_children_to_branch=False, soma_child_distance_threshold=50):
     """
     Perform QC checks on the soma and its immediate children.
 
@@ -53,6 +53,8 @@ def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
     ----------
     df : pd.DataFrame
         DataFrame containing neuron structure data with columns: 'compartment', 'parent', 'x', 'y', 'z', 'number_of_children'.
+    allow_soma_children_to_branch : bool, optional
+        When True, immediate children nodes of the soma are permitted to branch.
     soma_child_distance_threshold : float, optional
         Maximum allowed distance (in microns) for soma children from the soma. Default is 50.
     Returns
@@ -67,28 +69,30 @@ def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
     soma_children_furcation_test = {
         "test": "SomaChildrenFurcation",
         "description": "Children nodes of the soma should not branch. Returned node IDs are soma children that branch.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     soma_children_distance_test = {
         "test": "SomaChildrenDistance",
         "description": f"Immediate children of the soma should be within {soma_child_distance_threshold} microns. Returned node IDs exceed that distance.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     n_soma_error = {
         "test": "NumberOfSomas",
         "description": "There should be exactly one node with type=1 and parent=-1. Returned node IDs do not meet this criterion.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     if n_somas != 1:
-        n_soma_error['node_ids_with_error'] = soma_df.node_id.tolist()
+        n_soma_error['nodes_with_error'] = list(soma_df[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+        
     else:
         soma_children_df = df[df['parent'] == soma_node_id].copy()
         problem_children_branching = soma_children_df[soma_children_df['number_of_children'] != 1]
         if not problem_children_branching.empty:
-            soma_children_furcation_test['node_ids_with_error'] = problem_children_branching.node_id.tolist()
+            if not allow_soma_children_to_branch:
+                soma_children_furcation_test['nodes_with_error'] = list(problem_children_branching[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
 
         soma_coord = [soma_df['x'].values[0], soma_df['y'].values[0], soma_df['z'].values[0]]
         soma_children_df['distance_from_soma'] = soma_children_df.apply(
@@ -98,8 +102,8 @@ def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
             soma_children_df['distance_from_soma'] > soma_child_distance_threshold
         ]
         if not problem_children_distance.empty:
-            soma_children_distance_test['node_ids_with_error'] = problem_children_distance.node_id.tolist()
-
+            soma_children_distance_test['nodes_with_error'] = list(problem_children_distance[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+    
     return [n_soma_error, soma_children_furcation_test, soma_children_distance_test]
 
 
@@ -120,7 +124,7 @@ def axon_origination_qc(df):
     axon_origination_error = {
         "test": "AxonOrigins",
         "description": "Axon should originate from a single location and stem from axon, soma, or basal dendrite.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     axon_df = df[df['compartment'] == 2]
@@ -128,7 +132,7 @@ def axon_origination_qc(df):
     num_origins = axon_origination_df.shape[0]
 
     if num_origins != 1 or int(axon_origination_df['parent_node_type'].values[0]) not in [1, 3]:
-        axon_origination_error['node_ids_with_error'] = axon_origination_df.node_id.tolist()
+        axon_origination_error['nodes_with_error'] = list(axon_origination_df[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
 
     return [axon_origination_error]
 
@@ -152,12 +156,12 @@ def orphan_node_check(df):
     orphaned_node_error = {
         "test": "OrphanedNodes",
         "description": "Nodes with missing or incorrect parent assignments.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     orphaned_nodes = df[(df['parent_node_type'].isnull()) & (df['parent'] != -1)]
     if not orphaned_nodes.empty:
-        orphaned_node_error['node_ids_with_error'] = orphaned_nodes.node_id.tolist()
+        orphaned_node_error['nodes_with_error'] = list(orphaned_nodes[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
 
     return [orphaned_node_error]
 
@@ -182,7 +186,7 @@ def dendrite_origins_qc(df):
     for comp, sub_df in dend_df.groupby("compartment"):
         origins_df = sub_df[sub_df['parent_node_type'] != comp]
         invalid_origins = origins_df[origins_df['parent_node_type'] != 1]
-        invalid_dend_origins.extend(invalid_origins.node_id.tolist())
+        invalid_dend_origins.extend(invalid_origins[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
 
     if not invalid_dend_origins:
         invalid_dend_origins = None
@@ -190,7 +194,7 @@ def dendrite_origins_qc(df):
     return [{
         "test": "DendriteOrigins",
         "description": "Dendritic nodes should originate from soma or matching dendrite type.",
-        "node_ids_with_error": invalid_dend_origins
+        "nodes_with_error": invalid_dend_origins
     }]
 
 
@@ -213,7 +217,7 @@ def check_cycles_and_topological_sort(df, child_dict):
     report = {
         "test": "CheckForLoops",
         "description": "Check if loops exist in reconstruction.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     root_nodes = set(df.loc[df['parent'] == -1, 'node_id'])
@@ -225,7 +229,7 @@ def check_cycles_and_topological_sort(df, child_dict):
         while stack:
             current_node = stack.popleft()
             if current_node in seen_ids:
-                report["node_ids_with_error"] = [1]
+                report["nodes_with_error"] = [(1,0,0,0)]
                 return [report], {}
             visited.append(current_node)
             seen_ids.add(current_node)
@@ -252,9 +256,9 @@ def has_valid_name(swc_file: str, name_format='AIND'):
     -------
     list of dict
         QC report on filename formatting. If the file name is formatted appropriately, 
-        the returned error report will have None for the 'node_ids_with_error' field. 
+        the returned error report will have None for the 'nodes_with_error' field. 
         If the name is not formated correctly, the report will have [1] in the 
-        'node_ids_with_error' field.
+        'nodes_with_error' field.
     """
     if name_format == 'AIND':
         pattern = r"^N\d{1,}(-|_)\d{6}(-|_)(axon|dendrite|dendrites)(-|_)([A-Za-z]{2,3}|consensus)\.swc$"
@@ -268,11 +272,11 @@ def has_valid_name(swc_file: str, name_format='AIND'):
     filename_error_report = {
         "test": "FileNameFormat",
         "description": "Check if file is named correctly.",
-        "node_ids_with_error": None
+        "nodes_with_error": None
     }
 
     if not is_valid:
-        filename_error_report["node_ids_with_error"] = [1]
+        filename_error_report["nodes_with_error"] = [(1,0,0,0)]
 
     return [filename_error_report]
 

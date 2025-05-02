@@ -11,11 +11,11 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
         """Set up dummy dataframes and child dictionaries for testing."""
         # Valid acyclic graph with multiple DFS possibilities
         self.df_valid = pd.DataFrame([
-            {"node_id": 3, "parent": -1},  
-            {"node_id": 2, "parent": 3},
-            {"node_id": 1, "parent": 3},
-            {"node_id": 4, "parent": 1},
-            {"node_id": 5, "parent": 2},
+            {"node_id": 3, "parent": -1, "x": 0, "y": 0, "z": 0},  
+            {"node_id": 2, "parent": 3,  "x": 1, "y": 1, "z": 1},
+            {"node_id": 1, "parent": 3,  "x": 2, "y": 2, "z": 2},
+            {"node_id": 4, "parent": 1,  "x": 3, "y": 3, "z": 3},
+            {"node_id": 5, "parent": 2,  "x": 4, "y": 4, "z": 4},
         ])
         self.child_dict_valid = defaultdict(list, {
             3: [2, 1],  # The order in which 2 and 1 are visited can vary
@@ -32,12 +32,12 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
         
         # Graph with a cycle (invalid)
         self.df_cyclic = pd.DataFrame([
-            {"node_id": 1, "parent": -1},  # Root
-            {"node_id": 2, "parent": 1},
-            {"node_id": 3, "parent": 2},
-            {"node_id": 4, "parent": 3},
-            {"node_id": 5, "parent": 4},
-            {"node_id": 2, "parent": 5},  # Cycle (node 2 pointing back)
+            {"node_id": 1, "parent": -1, "x": 0, "y": 0, "z": 0},  # Root
+            {"node_id": 2, "parent": 1,  "x": 1, "y": 1, "z": 1},
+            {"node_id": 3, "parent": 2,  "x": 2, "y": 2, "z": 2},
+            {"node_id": 4, "parent": 3,  "x": 3, "y": 3, "z": 3},
+            {"node_id": 5, "parent": 4,  "x": 4, "y": 4, "z": 4},
+            {"node_id": 2, "parent": 5,  "x": 1, "y": 1, "z": 1},  # Cycle (node 2 pointing back)
         ])
         self.child_dict_cyclic = defaultdict(list, {
             1: [2],
@@ -51,7 +51,7 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
         """Test that a valid acyclic graph returns a correct DFS-based topological sorting."""
         cycle_report, node_mapping = check_cycles_and_topological_sort(self.df_valid, self.child_dict_valid)
         cycle_report = cycle_report[0]
-        self.assertEqual(cycle_report['node_ids_with_error'], None,  "Expected no cycles in the valid graph.")
+        self.assertEqual(cycle_report['nodes_with_error'], None,  "Expected no cycles in the valid graph.")
         self.assertEqual(set(node_mapping.keys()), set(self.df_valid["node_id"]), "Node IDs should match.")
         self.assertEqual(len(node_mapping), len(self.df_valid), "All nodes should be assigned a new label.")
 
@@ -64,7 +64,7 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
         """Test that a cyclic graph is detected correctly."""
         cycle_report, node_mapping = check_cycles_and_topological_sort(self.df_cyclic, self.child_dict_cyclic)
         cycle_report = cycle_report[0]
-        self.assertEqual(cycle_report['node_ids_with_error'], [1], "Expected a cycle to be detected.")
+        self.assertEqual(cycle_report['nodes_with_error'], [(1,0,0,0)], "Expected a cycle to be detected.")
         self.assertEqual(node_mapping, {}, "Expected an empty mapping when a cycle is detected.")
 
 
