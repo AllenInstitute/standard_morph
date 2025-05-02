@@ -290,6 +290,8 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
         elif node_display_mode == 'both':
             return f"{node[0]}: ({node[1]}, {node[2]}, {node[3]})"
         else:
+            warn = f"invalid node_display_mode passed, expected ['id','coord','both']. Got: {node_display_mode}"
+            warnings.warn(warn, UserWarning)
             return str(node[0])
 
     html_content = """

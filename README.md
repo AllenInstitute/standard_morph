@@ -55,20 +55,20 @@ print(worker.StandardizationReport)
     {
       "test": "SomaChildrenFurcation",
       "description": "Children nodes of the soma should not branch. The returned node IDs are immediate children of the soma that branch.",
-      "nodes_with_error": [(2, 313, 4409, 8981)]
+      "nodes_with_error": [(2, 313.0, 4409.0, 8981.0)]
     },
     {
       "test": "AxonOrigins",
       "description": "Axon should originate from a single location and should stem from axon, soma, or basal dendrite. Invalid axon origins are returned.",
       "nodes_with_error": [
-        (58, 3231, 3131, 9218), (423, 3521, 3320, 7840), (424, 3104, 3344, 8889),
+        (58, 3231.0, 3131.0, 9218.0), (423, 3521.0, 3320.0, 7840.0), (424, 3104.0, 3344.0, 8889.0),
       ]
     },
     {
       "test": "DendriteOrigins",
       "description": "Each apical/basal dendritic node should have a parent node with type 1 (soma) or its respective dendrite type.",
       "nodes_with_error": [
-        (3, 310, 1310, 3044, 7742) , (15,530, 5502, 8173)
+        (3, 310, 1310.0, 3044.0, 7742.0) , (15,530.0, 5502.0, 8173.0)
       ]
     }
   ],
