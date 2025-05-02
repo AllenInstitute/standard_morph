@@ -14,12 +14,12 @@ class TestAxonOriginationQC(unittest.TestCase):
             'x': [0, 5, 10, 15, 20],
             'y': [0, 5, 10, 15, 20],
             'z': [0, 5, 10, 15, 20],
-            'parnet_node_type': [None, 1, 1, 3, 3]  # Parent node types
-        }).set_index('node_id')
+            'parent_node_type': [None, 1, 1, 2, 2]  # Parent node types
+        }) #.set_index('node_id')
 
     def test_valid_axon_origination(self):
         """Test case where axon originates correctly from soma or basal dendrite."""
-        result = axon_origination_qc(self.sample_data)
+        result = axon_origination_qc(self.sample_data)[0]
         self.assertIsNone(result['node_ids_with_error'], "Axon origination should be valid.")
 
     def test_invalid_multiple_axon_origins(self):
@@ -31,10 +31,10 @@ class TestAxonOriginationQC(unittest.TestCase):
             'x': [0, 5, 10, 15, 20, 25],
             'y': [0, 5, 10, 15, 20, 25],
             'z': [0, 5, 10, 15, 20, 25],
-            'parnet_node_type': [None, 1, 1, 3, 1, 2]
+            'parent_node_type': [None, 1, 1, 3, 1, 2]
         }
-        df = pd.DataFrame(data).set_index('node_id')
-        result = axon_origination_qc(df)
+        df = pd.DataFrame(data) #.set_index('node_id')
+        result = axon_origination_qc(df)[0]
         
         self.assertIsNotNone(result['node_ids_with_error'], "Should detect multiple axon origins.")
         self.assertGreater(len(result['node_ids_with_error']), 1, "More than one invalid axon origin should be found.")
@@ -48,10 +48,10 @@ class TestAxonOriginationQC(unittest.TestCase):
             'x': [0, 5, 10, 15],
             'y': [0, 5, 10, 15],
             'z': [0, 5, 10, 15],
-            'parnet_node_type': [None, 1, 4, 2]  # Invalid parent node type
+            'parent_node_type': [None, 1, 4, 2]  # Invalid parent node type
         }
-        df = pd.DataFrame(data).set_index('node_id')
-        result = axon_origination_qc(df)
+        df = pd.DataFrame(data) #.set_index('node_id')
+        result = axon_origination_qc(df)[0]
         
         self.assertIsNotNone(result['node_ids_with_error'], "Should detect invalid axon origin type.")
         self.assertEqual(result['node_ids_with_error'], [3], "Only node 3 should be flagged as an invalid origin.")

@@ -50,7 +50,7 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
     def test_valid_graph(self):
         """Test that a valid acyclic graph returns a correct DFS-based topological sorting."""
         cycle_report, node_mapping = check_cycles_and_topological_sort(self.df_valid, self.child_dict_valid)
-        
+        cycle_report = cycle_report[0]
         self.assertEqual(cycle_report['node_ids_with_error'], None,  "Expected no cycles in the valid graph.")
         self.assertEqual(set(node_mapping.keys()), set(self.df_valid["node_id"]), "Node IDs should match.")
         self.assertEqual(len(node_mapping), len(self.df_valid), "All nodes should be assigned a new label.")
@@ -63,7 +63,7 @@ class TestCheckCyclesAndTopologicalSort(unittest.TestCase):
     def test_cyclic_graph(self):
         """Test that a cyclic graph is detected correctly."""
         cycle_report, node_mapping = check_cycles_and_topological_sort(self.df_cyclic, self.child_dict_cyclic)
-
+        cycle_report = cycle_report[0]
         self.assertEqual(cycle_report['node_ids_with_error'], [1], "Expected a cycle to be detected.")
         self.assertEqual(node_mapping, {}, "Expected an empty mapping when a cycle is detected.")
 

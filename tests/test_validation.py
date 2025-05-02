@@ -28,7 +28,7 @@ class TestStandardizer(unittest.TestCase):
             "x": [0, 10],
             "y": [0, 0],
             "r": [5, 2],  # Missing 'z' and 'parent' columns
-        }).set_index("node_id")
+        }) #.set_index("node_id")
 
         # Valid DataFrame that would be seen from aind_morphology_utils 
         self.valid_rename_df = pd.DataFrame.from_dict(

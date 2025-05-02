@@ -75,7 +75,7 @@ class Standardizer:
         self.valid_filename_format = valid_filename_format
         self.soma_mip_kwargs = soma_mip_kwargs or {}
         self.soma_children_distance_threshold = soma_children_distance_threshold
-
+        
         self._validate_inputs()
         self.load_data()
         self.extract_node_relationships()
@@ -86,6 +86,7 @@ class Standardizer:
             "StandardMorphVersion": get_version(),
             "path_to_mip": None,
         }
+        print(self.morph_df)
 
     def _validate_inputs(self):
         """Validate the inputs."""
@@ -107,13 +108,13 @@ class Standardizer:
         
         if isinstance(self.valid_filename_format, str):
             try:
-                valid_filename_format = FilenameFormat(self.valid_filename_format)
+                FilenameFormat(self.valid_filename_format)
             except ValueError:
                 raise ValueError(f"Invalid filename format: {self.valid_filename_format}. Must be one of: {[e.value for e in FilenameFormat]}")
 
 
     def load_data(self):
-        """Assign input data (from either input df or SWC file) to _swc_df."""
+        """Assign input data (from either input df or SWC file) to self._swc_df."""
         if self.path_to_swc:
             swc_df = pd.read_csv(
                 self.path_to_swc,
@@ -151,14 +152,16 @@ class Standardizer:
         swc_df["number_of_children"] = swc_df["node_id"].map(child_counts).fillna(0).astype(int)
 
         swc_df = swc_df.set_index("node_id", drop=False)
+        swc_df['node_id'] = swc_df.index
         swc_df["parent_node_type"] = swc_df["parent"].map(swc_df["compartment"])
 
         self.morph_df = swc_df
 
-    def _append_if_error(self, report):
+    def _append_if_error(self, report_list):
         """Append QC report if it contains errors."""
-        if report and report.get('node_ids_with_error') is not None:
-            self.StandardizationReport['errors'].append(report)
+        for report in report_list:
+            if report.get('node_ids_with_error') is not None:
+                self.StandardizationReport['errors'].append(report)
 
     def validate(self):
         """Run validation checks and build the report."""

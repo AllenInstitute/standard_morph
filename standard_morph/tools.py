@@ -47,203 +47,234 @@ def euclidean_distance(x, y):
      
 def soma_and_soma_children_qc(df, soma_child_distance_threshold=50):
     """
-    Perform quality control checks on the soma and its immediate children.
-    
-    Parameters:
-    df (pd.DataFrame): DataFrame containing neuron structure data with columns including 'compartment', 'parent', 'x', 'y', 'z', and 'number_of_children'.
-    soma_child_distance_threshold (float, optional): Maximum allowed distance (in microns) for soma children from the soma. Default is 50.
-    
-    Returns:
-    list: A list of dictionaries, each representing a QC test result with details about detected errors.
+    Perform QC checks on the soma and its immediate children.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing neuron structure data with columns: 'compartment', 'parent', 'x', 'y', 'z', 'number_of_children'.
+    soma_child_distance_threshold : float, optional
+        Maximum allowed distance (in microns) for soma children from the soma. Default is 50.
+    Returns
+    -------
+    list of dict
+        List of QC test results, each as a dictionary with test metadata and node IDs with errors.
     """
     soma_df = df[(df['compartment'] == 1) & (df['parent'] == -1)]
-    soma_node_id = soma_df.index[0]
+    soma_node_id = soma_df['node_id'].values[0]
     n_somas = soma_df.shape[0]
-    
+
     soma_children_furcation_test = {
         "test": "SomaChildrenFurcation",
-        "description": "Children nodes of the soma should not branch. The returned node IDs are immediate children of the soma that branch.",
-        "node_ids_with_error": None  # Inconclusive because the real soma is unknown
+        "description": "Children nodes of the soma should not branch. Returned node IDs are soma children that branch.",
+        "node_ids_with_error": None
     }
 
     soma_children_distance_test = {
         "test": "SomaChildrenDistance",
-        "description": f"Immediate children of the soma should be within {soma_child_distance_threshold} microns. The returned node IDs exceed that distance.",
+        "description": f"Immediate children of the soma should be within {soma_child_distance_threshold} microns. Returned node IDs exceed that distance.",
         "node_ids_with_error": None
     }
-    
+
     n_soma_error = {
         "test": "NumberOfSomas",
-        "description": "There should be exactly one node with type=1 and parent=-1. The returned node IDs do not meet this criterion.",
+        "description": "There should be exactly one node with type=1 and parent=-1. Returned node IDs do not meet this criterion.",
         "node_ids_with_error": None
     }
-    
+
     if n_somas != 1:
-        n_soma_error['node_ids_with_error'] = soma_df.index.tolist()
+        n_soma_error['node_ids_with_error'] = soma_df.node_id.tolist()
     else:
         soma_children_df = df[df['parent'] == soma_node_id].copy()
-        problem_children_brnching = soma_children_df[soma_children_df['number_of_children'] != 1]
-        if not problem_children_brnching.empty:
-            soma_children_furcation_test['node_ids_with_error'] = problem_children_brnching.node_id.tolist()
-        
+        problem_children_branching = soma_children_df[soma_children_df['number_of_children'] != 1]
+        if not problem_children_branching.empty:
+            soma_children_furcation_test['node_ids_with_error'] = problem_children_branching.node_id.tolist()
+
         soma_coord = [soma_df['x'].values[0], soma_df['y'].values[0], soma_df['z'].values[0]]
-        soma_children_df['distance_from_soma'] = soma_children_df.apply(lambda rw: euclidean_distance([rw.x, rw.y, rw.z], soma_coord), axis=1)
-        problem_children_distance = soma_children_df[soma_children_df['distance_from_soma'] > soma_child_distance_threshold]
+        soma_children_df['distance_from_soma'] = soma_children_df.apply(
+            lambda rw: euclidean_distance([rw.x, rw.y, rw.z], soma_coord), axis=1
+        )
+        problem_children_distance = soma_children_df[
+            soma_children_df['distance_from_soma'] > soma_child_distance_threshold
+        ]
         if not problem_children_distance.empty:
             soma_children_distance_test['node_ids_with_error'] = problem_children_distance.node_id.tolist()
-    
+
     return [n_soma_error, soma_children_furcation_test, soma_children_distance_test]
 
 
 def axon_origination_qc(df):
     """
-    Check the correctness of axon origination in neuron morphology.
-    
-    Parameters:
-    df (pd.DataFrame): DataFrame containing neuron structure data, including axon compartment details.
-    
-    Returns:
-    dict: A dictionary containing test results for axon origination errors.
+    Check that the axon originates from an appropriate compartment (axon, soma, or basal dendrite).
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing neuron structure data with axon compartment information.
+
+    Returns
+    -------
+    list of dict
+        QC test result for axon origination.
     """
     axon_origination_error = {
         "test": "AxonOrigins",
-        "description": "Axon should originate from a single location and should stem from axon, soma, or basal dendrite. Invalid axon origins are returned.",
+        "description": "Axon should originate from a single location and stem from axon, soma, or basal dendrite.",
         "node_ids_with_error": None
     }
-    
+
     axon_df = df[df['compartment'] == 2]
     axon_origination_df = axon_df[axon_df['parent_node_type'] != 2]
-    num_axon_origination_places = axon_origination_df.shape[0]
-    
-    if num_axon_origination_places != 1 or int(axon_origination_df['parent_node_type'].values[0]) not in [1, 3]:
+    num_origins = axon_origination_df.shape[0]
+
+    if num_origins != 1 or int(axon_origination_df['parent_node_type'].values[0]) not in [1, 3]:
         axon_origination_error['node_ids_with_error'] = axon_origination_df.node_id.tolist()
-    
-    return axon_origination_error
+
+    return [axon_origination_error]
 
 
 def orphan_node_check(df):
     """
-    Identify orphaned nodes in the neuron structure.
-    
-    Parameters:
-    df (pd.DataFrame): DataFrame containing neuron data, including parent-child relationships.
-    
-    Returns:
-    dict: A dictionary containing test results for orphaned nodes.
+    Identify nodes with missing or invalid parent assignments. This assumes that an orphaned
+    node will have an empty 'parent_node_type' column value, because the parent
+    node does not exist in the tree.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with neuron data including parent-child relationships.
+
+    Returns
+    -------
+    list of dict
+        QC test result for orphaned nodes.
     """
     orphaned_node_error = {
-        "test": "DuplicateNodes",
-        "description": "Detect nodes with missing or incorrect parent assignments. The returned node IDs are orphaned nodes.",
+        "test": "OrphanedNodes",
+        "description": "Nodes with missing or incorrect parent assignments.",
         "node_ids_with_error": None
     }
-    
+
     orphaned_nodes = df[(df['parent_node_type'].isnull()) & (df['parent'] != -1)]
     if not orphaned_nodes.empty:
-        orphaned_node_error['node_ids_with_error'] = orphaned_nodes.index.tolist()
-    
-    return orphaned_node_error
+        orphaned_node_error['node_ids_with_error'] = orphaned_nodes.node_id.tolist()
+
+    return [orphaned_node_error]
 
 
 def dendrite_origins_qc(df):
     """
-    Validate the origins of dendrites (apical and basal) in neuron morphology.
-    
-    Parameters:
-    df (pd.DataFrame): DataFrame containing neuron structure data, including dendrite compartment information.
-    
-    Returns:
-    dict: A dictionary containing test results for dendrite origination errors.
+    Validate that apical and basal dendrites originate from appropriate compartments.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing dendritic compartment information.
+
+    Returns
+    -------
+    list of dict
+        QC test result for dendrite origin issues.
     """
     dend_df = df[df['compartment'].isin([3, 4])]
     invalid_dend_origins = []
-    
+
     for comp, sub_df in dend_df.groupby("compartment"):
         origins_df = sub_df[sub_df['parent_node_type'] != comp]
         invalid_origins = origins_df[origins_df['parent_node_type'] != 1]
         invalid_dend_origins.extend(invalid_origins.node_id.tolist())
-    
+
     if not invalid_dend_origins:
         invalid_dend_origins = None
-    
-    return {
+
+    return [{
         "test": "DendriteOrigins",
-        "description": "Each apical/basal dendritic node should have a parent node with type 1 (soma) or its respective dendrite type.",
+        "description": "Dendritic nodes should originate from soma or matching dendrite type.",
         "node_ids_with_error": invalid_dend_origins
-    }
+    }]
 
 
 def check_cycles_and_topological_sort(df, child_dict):
-    """check if the graph contains cycles and return the node ids in DFS ordering
+    """
+    Check for cycles in the graph and return a topological sort of nodes.
 
-    Args:
-        df (pd.DataFrame): will have the columns node_id and parent
-        child_dict (dict): for each node id in df, stores a list of their children
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with 'node_id' and 'parent' columns.
+    child_dict : dict
+        Dictionary mapping each node ID to its children.
 
-    Returns:
-        tuple: (dict, dict) QC Report, node mapping for sorted nodes
+    Returns
+    -------
+    tuple
+        ([QC report dict], node mapping dict)
     """
     report = {
         "test": "CheckForLoops",
-        "description": "Will check if loops exist in reconstruction",
+        "description": "Check if loops exist in reconstruction.",
         "node_ids_with_error": None
     }
-    
-    root_nodes = set(df.loc[df['parent'] == -1, 'node_id'])  # Root nodes
 
+    root_nodes = set(df.loc[df['parent'] == -1, 'node_id'])
     visited = []
     seen_ids = set()
+
     for root_id in root_nodes:
-            
         stack = deque([root_id])
-        while len(stack) > 0:
+        while stack:
             current_node = stack.popleft()
             if current_node in seen_ids:
                 report["node_ids_with_error"] = [1]
-                return report, {}
+                return [report], {}
             visited.append(current_node)
             seen_ids.add(current_node)
-            for ch_no in child_dict[current_node]:
+            for ch_no in child_dict.get(current_node, []):
                 stack.appendleft(ch_no)
-    
+
     node_mapping = {old_id: new_id for new_id, old_id in enumerate(visited, 1)}
-    
-    return report, node_mapping
+
+    return [report], node_mapping
 
 
-      
-def has_valid_name(swc_file: str, name_format='AIND') -> bool:
+def has_valid_name(swc_file: str, name_format='AIND'):
     """
-    Validate that the SWC file name is in the correct format.
+    Validate the format of an SWC filename.
 
     Parameters
     ----------
     swc_file : str
-        The name of the SWC file to validate.
+        Filename to validate.
+    name_format : str, optional
+        Expected naming convention. Default is 'AIND'.
 
     Returns
     -------
-    dict
-        If the file name is formatted appropriately, the returned error report will have None for the
-        'node_ids_with_error' field. If the name is not formated correctly, the report will have
-        [1] in the 'node_ids_with_error' field.
+    list of dict
+        QC report on filename formatting. If the file name is formatted appropriately, 
+        the returned error report will have None for the 'node_ids_with_error' field. 
+        If the name is not formated correctly, the report will have [1] in the 
+        'node_ids_with_error' field.
     """
-    if name_format == 'AIND':    
+    if name_format == 'AIND':
         pattern = r"^N\d{1,}(-|_)\d{6}(-|_)(axon|dendrite|dendrites)(-|_)([A-Za-z]{2,3}|consensus)\.swc$"
+
     else:
         print("TODO: AIBS FILE NAME RE CHECK")
         pattern = ""
+
     is_valid = re.match(pattern, swc_file, re.IGNORECASE) is not None
+
     filename_error_report = {
-            "test":"FileNameFormat",
-            "description":'Check if file is named correctly',
-            "node_ids_with_error":None,
-        }
+        "test": "FileNameFormat",
+        "description": "Check if file is named correctly.",
+        "node_ids_with_error": None
+    }
+
     if not is_valid:
         filename_error_report["node_ids_with_error"] = [1]
-    
-    return filename_error_report
 
-
+    return [filename_error_report]
 
 def get_soma_mip(
         image_path: str,

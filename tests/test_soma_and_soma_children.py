@@ -10,27 +10,27 @@ class TestSomaQC(unittest.TestCase):
             {"node_id": 1, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
             {"node_id": 2, "compartment": 3, "x": 10, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 1},
             {"node_id": 3, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 2, "number_of_children": 0},
-        ]).set_index("node_id")
+        ])#.set_index("node_id")
 
         self.multiple_somas = pd.DataFrame([
             {"node_id": 1, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
             {"node_id": 2, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 0},
             {"node_id": 3, "compartment": 3, "x": 10, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 1},
             {"node_id": 4, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 3, "number_of_children": 0},
-        ]).set_index("node_id")
+        ])#.set_index("node_id")
 
         self.soma_children_branching = pd.DataFrame([
             {"node_id": 1, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
             {"node_id": 2, "compartment": 3, "x": 10, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 2},
             {"node_id": 3, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 2, "number_of_children": 1},
             {"node_id": 4, "compartment": 3, "x": 30, "y": 0, "z": 0, "r": 2, "parent": 2, "number_of_children": 0},
-        ]).set_index("node_id")
+        ])#.set_index("node_id")
 
         self.soma_children_exceed_distance = pd.DataFrame([
             {"node_id": 1, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
             {"node_id": 2, "compartment": 3, "x": 60, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 1},  # Exceeds threshold
             {"node_id": 3, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 2, "number_of_children": 0},
-        ]).set_index("node_id")
+        ])#.set_index("node_id")
 
     def test_valid_swc(self):
         """Test that a valid SWC structure does not trigger errors."""
