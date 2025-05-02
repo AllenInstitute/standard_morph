@@ -40,7 +40,8 @@ worker.validate()
 worker.write_to_swc(output_swc_path="QCd_File.swc")
 
 # Generate an HTML report for the single cell
-worker.report_to_html(report_path="Cell_QC_Report.html")
+# where node_display_mode='both' will write node ID and x,y,z coordinates
+worker.report_to_html(report_path="Cell_QC_Report.html", node_display_mode='both')
 
 # Can inspect the report
 # This may be useful for writing the QC records to a database
@@ -54,24 +55,20 @@ print(worker.StandardizationReport)
     {
       "test": "SomaChildrenFurcation",
       "description": "Children nodes of the soma should not branch. The returned node IDs are immediate children of the soma that branch.",
-      "node_ids_with_error": [2]
+      "nodes_with_error": [(2, 313, 4409, 8981)]
     },
     {
       "test": "AxonOrigins",
       "description": "Axon should originate from a single location and should stem from axon, soma, or basal dendrite. Invalid axon origins are returned.",
-      "node_ids_with_error": [
-        58, 423, 424, 2153, 2189, 2192, 2193, 2510, 2512, 2773, 2778, 2783, 
-        5162, 5176, 5181, 5184, 5186, 5208, 5227, 5229, 5231, 5258, 5260, 
-        5283, 5285
+      "nodes_with_error": [
+        (58, 3231, 3131, 9218), (423, 3521, 3320, 7840), (424, 3104, 3344, 8889),
       ]
     },
     {
       "test": "DendriteOrigins",
       "description": "Each apical/basal dendritic node should have a parent node with type 1 (soma) or its respective dendrite type.",
-      "node_ids_with_error": [
-        3, 15, 16, 40, 56, 86, 88, 119, 139, 190, 221, 223, 230, 233, 261, 
-        4269, 4272, 4283, 4286, 4292, 4302, 4304, 4338, 4349, 4356, 4358, 
-        4360, 4361, 4367
+      "nodes_with_error": [
+        (3, 310, 1310, 3044, 7742) , (15,530, 5502, 8173)
       ]
     }
   ],
@@ -94,9 +91,9 @@ for swc_path in [path_to_swc_1, path_to_swc_2]:
     this_report = worker.StandardizationReport
     all_reports.append(this_report)
     
-# Generate a combined HTML report for multiple cells
-create_html_report(data=all_reports, report_path="MultiCellReport.html")
-``````
+# Generate a combined HTML report for multiple cells, display just the x,y,z coordinate
+create_html_report(data=all_reports, report_path="MultiCellReport.html", node_display_mode='coord')
+```
 
 
 ## Example 3: Standardizing a Single SWC File + Soma MIP QC. UNTESTED
@@ -126,5 +123,5 @@ worker = Standardizer(
 worker.validate()
 
 # Generate an HTML report for the single cell
-worker.report_to_html(report_path="Single_Cell_QC_Report_With_Soma_MIP.html")
+worker.report_to_html(report_path="Single_Cell_QC_Report_With_Soma_MIP.html", node_display_mode='coord')
 ```

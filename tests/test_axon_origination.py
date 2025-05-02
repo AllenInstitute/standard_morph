@@ -20,7 +20,7 @@ class TestAxonOriginationQC(unittest.TestCase):
     def test_valid_axon_origination(self):
         """Test case where axon originates correctly from soma or basal dendrite."""
         result = axon_origination_qc(self.sample_data)[0]
-        self.assertIsNone(result['node_ids_with_error'], "Axon origination should be valid.")
+        self.assertIsNone(result['nodes_with_error'], "Axon origination should be valid.")
 
     def test_invalid_multiple_axon_origins(self):
         """Test case where axon originates from multiple locations."""
@@ -36,8 +36,8 @@ class TestAxonOriginationQC(unittest.TestCase):
         df = pd.DataFrame(data) #.set_index('node_id')
         result = axon_origination_qc(df)[0]
         
-        self.assertIsNotNone(result['node_ids_with_error'], "Should detect multiple axon origins.")
-        self.assertGreater(len(result['node_ids_with_error']), 1, "More than one invalid axon origin should be found.")
+        self.assertIsNotNone(result['nodes_with_error'], "Should detect multiple axon origins.")
+        self.assertGreater(len(result['nodes_with_error']), 1, "More than one invalid axon origin should be found.")
 
     def test_invalid_axon_origin_type(self):
         """Test case where axon originates from an invalid compartment."""
@@ -53,8 +53,8 @@ class TestAxonOriginationQC(unittest.TestCase):
         df = pd.DataFrame(data) #.set_index('node_id')
         result = axon_origination_qc(df)[0]
         
-        self.assertIsNotNone(result['node_ids_with_error'], "Should detect invalid axon origin type.")
-        self.assertEqual(result['node_ids_with_error'], [3], "Only node 3 should be flagged as an invalid origin.")
+        self.assertIsNotNone(result['nodes_with_error'], "Should detect invalid axon origin type.")
+        self.assertEqual(result['nodes_with_error'], [(3,10,10,10)], "Only node 3 should be flagged as an invalid origin.")
 
 
 if __name__ == '__main__':

@@ -36,28 +36,28 @@ class TestSomaQC(unittest.TestCase):
         """Test that a valid SWC structure does not trigger errors."""
         errors = soma_and_soma_children_qc(self.valid_swc)
         for error in errors:
-            self.assertIsNone(error["node_ids_with_error"])
+            self.assertIsNone(error["nodes_with_error"])
 
     def test_multiple_somas(self):
         """Test that multiple soma nodes are correctly detected."""
         errors = soma_and_soma_children_qc(self.multiple_somas)
         soma_error = next(err for err in errors if err["test"] == "NumberOfSomas")
-        self.assertIsNotNone(soma_error["node_ids_with_error"])
-        self.assertSetEqual(set(soma_error["node_ids_with_error"]), {1, 2})
+        self.assertIsNotNone(soma_error["nodes_with_error"])
+        self.assertEqual(soma_error["nodes_with_error"], [(1,0,0,0), (2,0,0,0)] )
 
     def test_soma_children_branching(self):
         """Test that improperly branching soma children are detected."""
         errors = soma_and_soma_children_qc(self.soma_children_branching)
         branching_error = next(err for err in errors if err["test"] == "SomaChildrenFurcation")
-        self.assertIsNotNone(branching_error["node_ids_with_error"])
-        self.assertSetEqual(set(branching_error["node_ids_with_error"]), {2})
+        self.assertIsNotNone(branching_error["nodes_with_error"])
+        self.assertEqual(branching_error["nodes_with_error"], [(2, 10, 0, 0)])
 
     def test_soma_children_exceed_distance(self):
         """Test that soma children exceeding the distance threshold are detected."""
         errors = soma_and_soma_children_qc(self.soma_children_exceed_distance, soma_child_distance_threshold=50)
         distance_error = next(err for err in errors if err["test"] == "SomaChildrenDistance")
-        self.assertIsNotNone(distance_error["node_ids_with_error"])
-        self.assertSetEqual(set(distance_error["node_ids_with_error"]), {2})
+        self.assertIsNotNone(distance_error["nodes_with_error"])
+        self.assertEqual(distance_error["nodes_with_error"] , [(2, 60, 0, 0)] )
 
 
 if __name__ == '__main__':
