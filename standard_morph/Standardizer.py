@@ -6,6 +6,7 @@ from collections import defaultdict
 from typing import Optional
 from enum import Enum
 import warnings
+from importlib.metadata import version
 
 from standard_morph.tools import (
     soma_and_soma_children_qc,
@@ -33,19 +34,7 @@ def apply_casts(df, casts):
 
 
 def get_version():
-    base_dir = Path(__file__).resolve().parents[1]
-    pyproject_path = base_dir / "pyproject.toml"
-
-    if not pyproject_path.exists():
-        raise FileNotFoundError(f"Could not find pyproject.toml at {pyproject_path}")
-
-    with pyproject_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            match = re.match(r'version\s*=\s*"(.*?)"', line)
-            if match:
-                return match.group(1)
-
-    raise ValueError("Version not found in pyproject.toml")
+    return version('standard_morph')
 
 
 class Standardizer:
