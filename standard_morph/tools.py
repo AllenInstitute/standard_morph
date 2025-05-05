@@ -63,7 +63,6 @@ def soma_and_soma_children_qc(df, allow_soma_children_to_branch=False, soma_chil
         List of QC test results, each as a dictionary with test metadata and node IDs with errors.
     """
     soma_df = df[(df['compartment'] == 1) & (df['parent'] == -1)]
-    soma_node_id = soma_df['node_id'].values[0]
     n_somas = soma_df.shape[0]
 
     soma_children_furcation_test = {
@@ -85,9 +84,15 @@ def soma_and_soma_children_qc(df, allow_soma_children_to_branch=False, soma_chil
     }
 
     if n_somas != 1:
-        n_soma_error['nodes_with_error'] = list(soma_df[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
-        
+        warn_msg = f"{n_somas} somas detected, unable to run soma_and_soma_children_qc. Verify axon + dend. swc files merged correctly"
+        warnings.warn(warn_msg, UserWarning)
+        if not soma_df.empty:
+            n_soma_error['nodes_with_error'] = list(soma_df[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+        else:
+            n_soma_error['nodes_with_error'] = [(0,0,0,0)]
+            
     else:
+        soma_node_id = soma_df['node_id'].values[0]
         soma_children_df = df[df['parent'] == soma_node_id].copy()
         problem_children_branching = soma_children_df[soma_children_df['number_of_children'] != 1]
         if not problem_children_branching.empty:
