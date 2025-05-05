@@ -283,9 +283,9 @@ def has_valid_name(swc_file: str, name_format='AIND'):
 def get_soma_mip(
         image_path: str,
         morph_df: pd.DataFrame,
-        output_dir: str,
+        mip_path: str,
         crop_size: int = 128,
-        mip_depth: int = 10
+        mip_depth: int = 10,
 ) -> str:
     """
     Get a MIP of the soma coordinate from the Zarr image.
@@ -296,8 +296,8 @@ def get_soma_mip(
         The path to the Zarr image file.
     graph : NeuronGraph
         The neuron graph.
-    output_dir : str
-        The directory to save output files.
+    mip_path : str
+        The output .png file to save the mip
     crop_size : int, optional
         The size of the crop around the soma coordinate (default is 128).
     mip_depth : int, optional
@@ -328,7 +328,7 @@ def get_soma_mip(
     scale = metadata['multiscales'][0]['datasets'][0]['coordinateTransformations'][0]['scale']
 
     # root = [node for node in graph.nodes if graph.in_degree(node) == 0][0]
-    soma_df = morph_df[(morph_df['compartment'] == 1) & (df['parent'] == -1)]
+    soma_df = morph_df[(morph_df['compartment'] == 1) & (morph_df['parent'] == -1)]
     n_somas = soma_df.shape[0]
     if n_somas >1:
         warn_msg = f"There were {n_somas} somas detected, using the first one to take soma MIP"
@@ -349,10 +349,6 @@ def get_soma_mip(
 
     mip = rescale_intensity(mip, out_range=(0, 255)).astype('uint8')
 
-    mip_dir = os.path.join(output_dir, "mip")
-    os.makedirs(mip_dir, exist_ok=True)
-
-    mip_path = os.path.join(mip_dir, f"{graph.get_name()}_soma_mip.png")
     imageio.imwrite(mip_path, mip)
 
     return mip_path
