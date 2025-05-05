@@ -89,7 +89,7 @@ def soma_and_soma_children_qc(df, allow_soma_children_to_branch=False, soma_chil
         if not soma_df.empty:
             n_soma_error['nodes_with_error'] = list(soma_df[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
         else:
-            n_soma_error['nodes_with_error'] = [(0,0,0,0)]
+            n_soma_error['nodes_with_error'] = [(1,0,0,0)]
             
     else:
         soma_node_id = soma_df['node_id'].values[0]
