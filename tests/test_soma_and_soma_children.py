@@ -1,4 +1,5 @@
 import unittest
+import warnings
 import pandas as pd
 from standard_morph.tools import soma_and_soma_children_qc
 
@@ -15,6 +16,13 @@ class TestSomaQC(unittest.TestCase):
         self.multiple_somas = pd.DataFrame([
             {"node_id": 1, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
             {"node_id": 2, "compartment": 1, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 0},
+            {"node_id": 3, "compartment": 3, "x": 10, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 1},
+            {"node_id": 4, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 3, "number_of_children": 0},
+        ])#.set_index("node_id")
+
+        self.no_soma = pd.DataFrame([
+            {"node_id": 1, "compartment": 3, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 1},
+            {"node_id": 2, "compartment": 3, "x": 0, "y": 0, "z": 0, "r": 5, "parent": -1, "number_of_children": 0},
             {"node_id": 3, "compartment": 3, "x": 10, "y": 0, "z": 0, "r": 2, "parent": 1, "number_of_children": 1},
             {"node_id": 4, "compartment": 3, "x": 20, "y": 0, "z": 0, "r": 2, "parent": 3, "number_of_children": 0},
         ])#.set_index("node_id")
@@ -37,13 +45,25 @@ class TestSomaQC(unittest.TestCase):
         errors = soma_and_soma_children_qc(self.valid_swc)
         for error in errors:
             self.assertIsNone(error["nodes_with_error"])
-
+        
     def test_multiple_somas(self):
         """Test that multiple soma nodes are correctly detected."""
-        errors = soma_and_soma_children_qc(self.multiple_somas)
+        with self.assertWarns(UserWarning) as cm:
+            errors = soma_and_soma_children_qc(self.multiple_somas)
+
+        self.assertIn("2 somas detected", str(cm.warning))
         soma_error = next(err for err in errors if err["test"] == "NumberOfSomas")
         self.assertIsNotNone(soma_error["nodes_with_error"])
-        self.assertEqual(soma_error["nodes_with_error"], [(1,0,0,0), (2,0,0,0)] )
+        self.assertEqual(soma_error["nodes_with_error"], [(1, 0, 0, 0), (2, 0, 0, 0)])
+        
+    def test_no_somas(self):
+        """Test that no soma nodes error is correctly detected."""
+        with self.assertWarns(UserWarning) as cm:
+            errors = soma_and_soma_children_qc(self.no_soma)
+        self.assertIn("0 somas detected", str(cm.warning))
+        soma_error = next(err for err in errors if err["test"] == "NumberOfSomas")
+        self.assertIsNotNone(soma_error["nodes_with_error"])
+        self.assertEqual(soma_error["nodes_with_error"], [(1,0,0,0)] )
 
     def test_soma_children_branching(self):
         """Test that improperly branching soma children are detected."""
