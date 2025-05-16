@@ -170,7 +170,6 @@ class Standardizer:
         swc_df["x"] = swc_df["x"] + offset_x
         swc_df["y"] = swc_df["y"] + offset_y
         swc_df["z"] = swc_df["z"] + offset_z
-        
         return swc_df
 
     
