@@ -108,13 +108,7 @@ class Standardizer:
     def load_data(self):
         """Assign input data (from either input df or SWC file) to self._swc_df."""
         if self.path_to_swc:
-            swc_df = pd.read_csv(
-                self.path_to_swc,
-                sep=self.separator,
-                comment='#',
-                header=None,
-                names=SWC_COLUMN_NAMES,
-            )
+            swc_df = self.load_swc() 
         else:
             swc_df = self.input_morphology_df.copy()
 
@@ -123,6 +117,63 @@ class Standardizer:
 
         self._swc_df = swc_df
 
+    def load_swc(self):
+        """Load swc file to dataframe, will correct for Horta # OFFSET if present
+
+        Raises:
+            ValueError: numeric values must follow the # OFFSET header
+            ValueError: only 3 numeric values should follow the # OFFSET header
+
+        Returns:
+            pd.DataFrame: 
+        """
+        # Default offset
+        offset_x = 0.0
+        offset_y = 0.0
+        offset_z = 0.0
+
+        # First pass: read the file line by line to detect if an OFFSET line is present
+        with open(self.path_to_swc, "r") as f:
+            for line in f:
+                if line.strip().startswith("# OFFSET"):
+                    # Expected format: "# OFFSET X Y Z"
+                    parts = line.strip().split()
+                    # parts[0] = "#", parts[1] = "OFFSET", parts[2] = X, parts[3] = Y, parts[4] = Z
+                    if len(parts) == 5:
+                        try:
+                            offset_x = float(parts[2])
+                            offset_y = float(parts[3])
+                            offset_z = float(parts[4])
+                        except ValueError:
+                            raise ValueError(
+                                "Invalid OFFSET line in header. "
+                                "Expected numeric values after '# OFFSET': "
+                                f"{line.strip()}"
+                            )
+                    else:
+                        raise ValueError(
+                            "Invalid OFFSET line in SWC header. "
+                            "Expected exactly 3 numbers following '# OFFSET'."
+                        )
+                    break  # We only look for the first occurrence of OFFSET.
+
+        # Now read the SWC file as usual, ignoring the header lines (#)
+        swc_df = pd.read_csv(
+            self.path_to_swc,
+            delim_whitespace=True,
+            comment="#",
+            header=None,
+            names=SWC_COLUMN_NAMES,
+        )
+
+        # Apply the offset to (x, y, z)
+        swc_df["x"] = swc_df["x"] + offset_x
+        swc_df["y"] = swc_df["y"] + offset_y
+        swc_df["z"] = swc_df["z"] + offset_z
+        
+        return swc_df
+
+    
     def extract_node_relationships(self):
         """
         Compute structural relationships between nodes (e.g. child counts and parent node types).
