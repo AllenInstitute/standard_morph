@@ -6,7 +6,7 @@ standard_morph/__pycache__/**
 *.pyc
 *.ipynb
 *.csv
-*.swc
+# *.swc
 .eggs/
 .idea/
 .vscode/

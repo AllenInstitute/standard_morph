@@ -170,6 +170,64 @@ def orphan_node_check(df):
 
     return [orphaned_node_error]
 
+def node_degree_check(df, max_node_degree=4):
+    """
+    Identify nodes that have too high of a degree (i.e. too many children). Ignores
+    soma node.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with neuron data including parent-child relationships.
+    
+    max_node_degree : int
+        maximum tolerated node degree
+
+    Returns
+    -------
+    list of dict
+        QC test result for nodes with too many children.
+    """
+    node_degree_error = {
+        "test": "MaxNodeDegree",
+        "description": f"Nodes with more than {max_node_degree} children.",
+        "nodes_with_error": None
+    }
+
+    problem_nodes = df[ (df["number_of_children"]>max_node_degree) & (df["compartment"]!=1)]
+    if not problem_nodes.empty:
+        node_degree_error['nodes_with_error'] = list(problem_nodes[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+
+    return [node_degree_error]
+
+def distance_to_parent_node_check(df, max_distance_to_parent_node=100):
+    """
+    Identify nodes that are too far from their parent node
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with neuron data including parent-child relationships.
+    max_distance_to_parent_node : float
+        Maximum distance any node may be from its parent node
+
+    Returns
+    -------
+    list of dict
+        QC test result for nodes with too many children.
+    """
+    node_parent_distance_error = {
+        "test": "MaxNodeDistanceFromParent",
+        "description": f"Nodes that are further than {max_distance_to_parent_node} from their parent.",
+        "nodes_with_error": None
+    }
+
+    problem_nodes = df[ df["parent_distance"]>max_distance_to_parent_node ]
+    if not problem_nodes.empty:
+        node_parent_distance_error['nodes_with_error'] = list(problem_nodes[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+
+    return [node_parent_distance_error]
+
 
 def dendrite_origins_qc(df):
     """

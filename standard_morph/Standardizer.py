@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import re
+import numpy as np
 from pathlib import Path
 from collections import defaultdict
 from typing import Optional
@@ -13,6 +14,8 @@ from standard_morph.tools import (
     axon_origination_qc,
     dendrite_origins_qc,
     orphan_node_check,
+    node_degree_check,
+    distance_to_parent_node_check,
     check_cycles_and_topological_sort,
     has_valid_name,
     get_soma_mip,
@@ -197,7 +200,26 @@ class Standardizer:
         swc_df['node_id'] = swc_df.index
         swc_df["parent_node_type"] = swc_df["parent"].map(swc_df["compartment"])
 
-        self.morph_df = swc_df
+    
+        # get distance to parent node
+        df_merged = swc_df.merge(
+        swc_df[['node_id', 'x', 'y', 'z']].rename(columns={
+            'node_id': 'parent',
+            'x': 'parent_x',
+            'y': 'parent_y',
+            'z': 'parent_z'
+        }),
+        on='parent',
+        how='left'
+        )
+
+        df_merged['parent_distance'] = np.sqrt(
+            (df_merged['x'] - df_merged['parent_x'])**2 +
+            (df_merged['y'] - df_merged['parent_y'])**2 +
+            (df_merged['z'] - df_merged['parent_z'])**2
+        ).fillna(0)
+        
+        self.morph_df = df_merged
 
     def _append_if_error(self, report_list):
         """Append QC report if it contains errors."""
@@ -211,6 +233,8 @@ class Standardizer:
         self._append_if_error(axon_origination_qc(self.morph_df))
         self._append_if_error(dendrite_origins_qc(self.morph_df))
         self._append_if_error(orphan_node_check(self.morph_df))
+        self._append_if_error(node_degree_check(self.morph_df))
+        self._append_if_error(distance_to_parent_node_check(self.morph_df))
 
         cycle_report, sorted_nodes = check_cycles_and_topological_sort(
             df=self.morph_df,
