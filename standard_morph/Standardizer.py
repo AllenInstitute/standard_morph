@@ -51,6 +51,7 @@ class Standardizer:
         valid_filename_format: FilenameFormat = FilenameFormat.NONE,
         soma_mip_kwargs: dict = None,
         allow_soma_children_to_branch: bool = False,
+        write_all_tests_to_report: bool = False
     ):
         """
         Class for running SWC standardization.
@@ -63,6 +64,7 @@ class Standardizer:
             valid_filename_format (FilenameFormat): Filename format validation option.
             soma_mip_kwargs (dict): Keyword arguments for get_soma_mip function.
             allow_soma_children_to_branch (bool): when True, immediate children of soma are allowed to branch 
+            write_all_tests_to_report (bool): when True, will write all tests to the report html, not just those that error out
         """
         self.path_to_swc = path_to_swc
         self.input_morphology_df = input_morphology_df
@@ -71,13 +73,15 @@ class Standardizer:
         self.soma_mip_kwargs = soma_mip_kwargs or {}
         self.soma_children_distance_threshold = soma_children_distance_threshold
         self.allow_soma_children_to_branch = allow_soma_children_to_branch
-        
+        self.write_all_tests_to_report = write_all_tests_to_report
+         
         self._validate_inputs()
         self.load_data()
         self.extract_node_relationships()
 
         self.StandardizationReport = {
             "errors": [],
+            "tests": [],
             "input_file": self.path_to_swc,
             "StandardMorphVersion": get_version(),
             "path_to_mip": None,
@@ -221,31 +225,33 @@ class Standardizer:
         
         self.morph_df = df_merged
 
-    def _append_if_error(self, report_list):
-        """Append QC report if it contains errors."""
+    def _append_if_error(self, report_list, write_all_tests_to_report):
         for report in report_list:
-            if report.get('nodes_with_error') is not None:
+            has_error = report.get('nodes_with_error') is not None
+            if has_error:
                 self.StandardizationReport['errors'].append(report)
+            if write_all_tests_to_report or has_error:
+                self.StandardizationReport['tests'].append(report)
 
     def validate(self):
         """Run validation checks and build the report."""
-        self._append_if_error(soma_and_soma_children_qc(self.morph_df, self.allow_soma_children_to_branch, self.soma_children_distance_threshold))
-        self._append_if_error(axon_origination_qc(self.morph_df))
-        self._append_if_error(dendrite_origins_qc(self.morph_df))
-        self._append_if_error(orphan_node_check(self.morph_df))
-        self._append_if_error(node_degree_check(self.morph_df))
-        self._append_if_error(distance_to_parent_node_check(self.morph_df))
+        self._append_if_error(soma_and_soma_children_qc(self.morph_df, self.allow_soma_children_to_branch, self.soma_children_distance_threshold), self.write_all_tests_to_report)
+        self._append_if_error(axon_origination_qc(self.morph_df) , self.write_all_tests_to_report)
+        self._append_if_error(dendrite_origins_qc(self.morph_df), self.write_all_tests_to_report)
+        self._append_if_error(orphan_node_check(self.morph_df), self.write_all_tests_to_report)
+        self._append_if_error(node_degree_check(self.morph_df), self.write_all_tests_to_report)
+        self._append_if_error(distance_to_parent_node_check(self.morph_df), self.write_all_tests_to_report)
 
         cycle_report, sorted_nodes = check_cycles_and_topological_sort(
             df=self.morph_df,
             child_dict=self._child_ids_dict
         )
-        self._append_if_error(cycle_report)
+        self._append_if_error(cycle_report, self.write_all_tests_to_report)
         self.sorted_node_id_dict = sorted_nodes
 
         if self.valid_filename_format != FilenameFormat.NONE and self.path_to_swc:
             filename = os.path.basename(self.path_to_swc)
-            self._append_if_error(has_valid_name(filename))
+            self._append_if_error(has_valid_name(filename), self.write_all_tests_to_report)
 
         if self.soma_mip_kwargs:
             mip_path = get_soma_mip(morph_df=self.morph_df, **self.soma_mip_kwargs)
@@ -284,7 +290,9 @@ class Standardizer:
         report = self.StandardizationReport
         neuron_name = os.path.basename(report["input_file"])
         path_to_mip = report.get("path_to_mip", None)
-        errors = report.get("errors", [])
+        
+        # Use "tests" (all runs) if populated, otherwise fall back to "errors" only
+        tests = report.get("tests") or report.get("errors", [])
 
         def format_node(node):
             if node_display_mode == 'id':
@@ -294,23 +302,26 @@ class Standardizer:
             elif node_display_mode == 'both':
                 return f"{node[0]}: ({node[1]}, {node[2]}, {node[3]})"
             else:
-                warn = f"invalid node_display_mode passed, expected ['id','coord','both']. Got: {node_display_mode}"
-                warnings.warn(warn, UserWarning)
+                warnings.warn(
+                    f"invalid node_display_mode passed, expected ['id','coord','both']. Got: {node_display_mode}",
+                    UserWarning
+                )
                 return str(node[0])
 
-        if errors:
-            error_details = "<ul>"
-            for error in errors:
-                error_details += f"<li><b>{error['test']}:</b> {error['description']}"
-                if error["nodes_with_error"]:
-                    formatted_nodes = ', '.join(format_node(n) for n in error["nodes_with_error"])
-                    error_details += f" (Nodes: {formatted_nodes})"
-                error_details += "</li>"
-            error_details += "</ul>"
-            error_class = "error"
+        if tests:
+            test_details = "<ul>"
+            for test in tests:
+                passed = test["nodes_with_error"] is None
+                item_class = "no-error" if passed else "error"
+                status = "✓ PASS" if passed else "✗ FAIL"
+                test_details += f"<li class='{item_class}'><b>{test['test']}:</b> [{status}] {test['description']}"
+                if not passed:
+                    formatted_nodes = ', '.join(format_node(n) for n in test["nodes_with_error"])
+                    test_details += f" (Nodes: {formatted_nodes})"
+                test_details += "</li>"
+            test_details += "</ul>"
         else:
-            error_details = "<span class='no-error'>No errors found</span>"
-            error_class = "no-error"
+            test_details = "<span class='no-error'>No errors found</span>"
 
         html_content = f"""
         <html>
@@ -327,7 +338,7 @@ class Standardizer:
         <body>
             <h1>Standardization Report: {neuron_name}</h1>
             <p><strong>StandardMorph Version:</strong> {report.get("StandardMorphVersion", "Unknown")}</p>
-            <p class="{error_class}"><strong>Errors:</strong><br>{error_details}</p>
+            <p><strong>QC Tests:</strong><br>{test_details}</p>
             {'<img src="' + path_to_mip + '" alt="MIP Image">' if path_to_mip else ''}
         </body>
         </html>
@@ -345,6 +356,7 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
 
     node_display_mode: 'id', 'coord', or 'both' to control display of nodes_with_error
     """
+
     def format_node(node):
         if node_display_mode == 'id':
             return str(node[0])
@@ -353,8 +365,10 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
         elif node_display_mode == 'both':
             return f"{node[0]}: ({node[1]}, {node[2]}, {node[3]})"
         else:
-            warn = f"invalid node_display_mode passed, expected ['id','coord','both']. Got: {node_display_mode}"
-            warnings.warn(warn, UserWarning)
+            warnings.warn(
+                f"invalid node_display_mode passed, expected ['id','coord','both']. Got: {node_display_mode}",
+                UserWarning
+            )
             return str(node[0])
 
     html_content = """
@@ -378,7 +392,7 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
             <tr>
                 <th>Neuron Name</th>
                 <th>StandardMorph Version</th>
-                <th>Errors</th>
+                <th>QC Tests</th>
                 <th>MIP Image</th>
             </tr>
     """
@@ -387,21 +401,24 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
         neuron_name = os.path.basename(neuron_data["input_file"])
         path_to_mip = neuron_data.get("path_to_mip", None)
         version = neuron_data.get("StandardMorphVersion", "Unknown")
-        errors = neuron_data.get("errors", [])
 
-        if errors:
-            error_details = "<ul>"
-            for error in errors:
-                error_details += f"<li><b>{error['test']}:</b> {error['description']}"
-                if error["nodes_with_error"]:
-                    formatted_nodes = ', '.join(format_node(n) for n in error["nodes_with_error"])
-                    error_details += f" (Nodes: {formatted_nodes})"
-                error_details += "</li>"
-            error_details += "</ul>"
-            error_class = "error"
+        # Use "tests" (all runs) if populated, otherwise fall back to "errors" only
+        tests = neuron_data.get("tests") or neuron_data.get("errors", [])
+
+        if tests:
+            test_details = "<ul>"
+            for test in tests:
+                passed = test["nodes_with_error"] is None
+                item_class = "no-error" if passed else "error"
+                status = "✓ PASS" if passed else "✗ FAIL"
+                test_details += f"<li class='{item_class}'><b>{test['test']}:</b> [{status}] {test['description']}"
+                if not passed:
+                    formatted_nodes = ', '.join(format_node(n) for n in test["nodes_with_error"])
+                    test_details += f" (Nodes: {formatted_nodes})"
+                test_details += "</li>"
+            test_details += "</ul>"
         else:
-            error_details = "<span class='no-error'>No errors found</span>"
-            error_class = "no-error"
+            test_details = "<span class='no-error'>No errors found</span>"
 
         mip_img_tag = f'<img src="{path_to_mip}" alt="MIP Image">' if path_to_mip else "N/A"
 
@@ -409,7 +426,7 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
             <tr>
                 <td>{neuron_name}</td>
                 <td>{version}</td>
-                <td class="{error_class}">{error_details}</td>
+                <td>{test_details}</td>
                 <td>{mip_img_tag}</td>
             </tr>
         """
@@ -424,3 +441,4 @@ def create_html_report(data: list, report_path: str, node_display_mode='id') -> 
         f.write(html_content)
 
     print(f"Report saved to {report_path}")
+    
