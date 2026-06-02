@@ -324,7 +324,7 @@ def has_valid_name(swc_file: str, name_format='AIND'):
         'nodes_with_error' field.
     """
     if name_format == 'AIND':
-        pattern = r"^N\d{1,}[-_]\d{6}(?:[-_](?:[A-Za-z]{2,3}|consensus)|[-_](?:axon|dendrite)[-_][A-Za-z]{2,3})?\.swc$"
+        pattern = r"^N\d{1,}[-_]\d{6}(?:[-_](?:[A-Za-z]{2,3}|consensus)|[-_](?:axon|dendrite)[-_](?:[A-Za-z]{2,3}|consensus))?\.swc$"
 
     else:
         print("TODO: AIBS FILE NAME RE CHECK")

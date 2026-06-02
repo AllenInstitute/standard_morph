@@ -123,6 +123,8 @@ class TestFilenameValidation(unittest.TestCase):
             "N003-706301-axon-AG.swc",
             "N003-706301-dendrite-SC.swc",
             "N102-123456-CONSENSUS.swc",
+            "N041-653158-dendrite-CONSENSUS.swc",
+            "N041-653158-axon-CONSENSUS.swc",
         ]
 
         for filename in valid_filenames:
@@ -137,6 +139,7 @@ class TestFilenameValidation(unittest.TestCase):
             "N024-64843.swc",
             "N003-706301-apical-AG.swc",
             "N024-648434-PG.txt",
+            "N041-653158-CONSENSUS-axon-CONSENSUS.swc",
         ]
 
         for filename in invalid_filenames:
