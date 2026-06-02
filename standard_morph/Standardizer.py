@@ -167,7 +167,7 @@ class Standardizer:
         # Now read the SWC file as usual, ignoring the header lines (#)
         swc_df = pd.read_csv(
             self.path_to_swc,
-            delim_whitespace=True,
+            sep=r'\s+',
             comment="#",
             header=None,
             names=SWC_COLUMN_NAMES,
