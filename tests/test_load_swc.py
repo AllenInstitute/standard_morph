@@ -8,7 +8,7 @@ class TestHortaLoadSwc(unittest.TestCase):
     def setUp(self):
         """Set up a dummy neuron morphology DataFrame."""
         test_dir = os.path.dirname(__file__)
-        file_path = os.path.join(test_dir, "test_horta_swc.swc")
+        file_path = os.path.join(test_dir, "swcs", "test_horta_swc.swc")
         
         self.worker_df = Standardizer(path_to_swc=file_path)._swc_df
 
