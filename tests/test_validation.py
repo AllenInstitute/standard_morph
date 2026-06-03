@@ -1,6 +1,7 @@
 import unittest
 import pandas as pd
 from standard_morph.Standardizer import Standardizer
+from standard_morph.tools import has_valid_name
 
 class TestStandardizer(unittest.TestCase):
 
@@ -111,6 +112,41 @@ class TestStandardizer(unittest.TestCase):
         """Test that missing filename format does not trigger errors."""
         standardizer = Standardizer(path_to_swc=None, input_morphology_df=self.valid_df, valid_filename_format=self.missing_filename_format)
         self.assertEqual(standardizer.valid_filename_format, self.missing_filename_format)
+
+class TestFilenameValidation(unittest.TestCase):
+
+    def test_aind_valid_filename_formats(self):
+        valid_filenames = [
+            "N024-648434.swc",
+            "N024-648434-PG.swc",
+            "N024-648434-LEH.swc",
+            "N003-706301-axon-AG.swc",
+            "N003-706301-dendrite-SC.swc",
+            "N102-123456-CONSENSUS.swc",
+            "N041-653158-dendrite-CONSENSUS.swc",
+            "N041-653158-axon-CONSENSUS.swc",
+        ]
+
+        for filename in valid_filenames:
+            with self.subTest(filename=filename):
+                result = has_valid_name(filename)[0]
+                self.assertIsNone(result["nodes_with_error"])
+
+    def test_aind_invalid_filename_formats(self):
+        invalid_filenames = [
+            "N003-706301-dendrites-SC.swc",
+            "024-648434.swc",
+            "N024-64843.swc",
+            "N003-706301-apical-AG.swc",
+            "N024-648434-PG.txt",
+            "N041-653158-CONSENSUS-axon-CONSENSUS.swc",
+        ]
+
+        for filename in invalid_filenames:
+            with self.subTest(filename=filename):
+                result = has_valid_name(filename)[0]
+                self.assertEqual(result["nodes_with_error"], [(1,0,0,0)])
+
 
 if __name__ == '__main__':
     unittest.main()
