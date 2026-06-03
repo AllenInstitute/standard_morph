@@ -1,6 +1,8 @@
 import unittest
+from pathlib import Path
 import pandas as pd
-from standard_morph.tools import axon_origination_qc
+from standard_morph.Standardizer import Standardizer
+from standard_morph.tools import axon_origination_qc, axon_origin_distance_qc
 
 
 class TestAxonOriginationQC(unittest.TestCase):
@@ -57,5 +59,61 @@ class TestAxonOriginationQC(unittest.TestCase):
         self.assertEqual(result['nodes_with_error'], [(3,10,10,10)], "Only node 3 should be flagged as an invalid origin.")
 
 
-if __name__ == '__main__':
+class TestAxonOriginDistanceQC(unittest.TestCase):
+
+    def setUp(self):
+        """Load SWC fixture through Standardizer to compute parent relationships."""
+        swc_path = Path(__file__).parent / "swcs" / "N024-648434-CONSENSUS.swc"
+        self.standardizer = Standardizer(path_to_swc=str(swc_path))
+        self.morph_df = self.standardizer.morph_df
+
+    def test_fixture_axon_origin_distance_facts(self):
+        """Test expected axon origin node, parent, and first edge distance."""
+        axon_origins = self.morph_df[
+            (self.morph_df["compartment"] == 2)
+            & (self.morph_df["parent_node_type"] != 2)
+        ]
+
+        self.assertEqual(len(axon_origins), 1)
+        axon_origin = axon_origins.iloc[0]
+        self.assertEqual(axon_origin["node_id"], 93)
+        self.assertEqual(axon_origin["parent"], 68)
+        self.assertEqual(axon_origin["parent_node_type"], 3)
+        self.assertEqual(axon_origin["parent_distance"], 5)
+
+    def test_axon_origin_distance_passes_default_threshold(self):
+        """Test axon origin distance passes default threshold."""
+        result = axon_origin_distance_qc(self.morph_df)[0]
+
+        self.assertEqual(result["test"], "AxonOriginDistance")
+        self.assertIsNone(result["nodes_with_error"])
+
+    def test_axon_origin_distance_fails_custom_threshold(self):
+        """Test axon origin distance fails when threshold is below fixture edge length."""
+        result = axon_origin_distance_qc(
+            self.morph_df, axon_origin_distance_threshold=4
+        )[0]
+
+        self.assertEqual(
+            result["nodes_with_error"], [(93, 30060.0, 9835.0, 12166.0)]
+        )
+
+    def test_standardizer_validate_includes_default_axon_origin_distance_check(
+        self,
+    ):
+        """Test Standardizer validates axon origin distance with default threshold."""
+        self.standardizer.write_all_tests_to_report = True
+        self.standardizer.validate()
+
+        axon_origin_distance_tests = [
+            test
+            for test in self.standardizer.StandardizationReport["tests"]
+            if test["test"] == "AxonOriginDistance"
+        ]
+
+        self.assertEqual(len(axon_origin_distance_tests), 1)
+        self.assertIsNone(axon_origin_distance_tests[0]["nodes_with_error"])
+
+
+if __name__ == "__main__":
     unittest.main()

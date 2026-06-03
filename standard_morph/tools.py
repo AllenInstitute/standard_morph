@@ -142,6 +142,40 @@ def axon_origination_qc(df):
     return [axon_origination_error]
 
 
+def axon_origin_distance_qc(df, axon_origin_distance_threshold=100):
+    """
+    Check that the axon origin node is within the configured distance of its parent.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing neuron structure data with parent node types and distances.
+    axon_origin_distance_threshold : float, optional
+        Maximum allowed distance between an axon origin node and its parent. Default is 100.
+
+    Returns
+    -------
+    list of dict
+        QC test result for axon origin edge distance.
+    """
+    axon_origin_distance_error = {
+        "test": "AxonOriginDistance",
+        "description": f"Axon origin node should be within {axon_origin_distance_threshold} microns of its parent. Returned node IDs exceed that distance.",
+        "nodes_with_error": None
+    }
+
+    axon_df = df[df['compartment'] == 2]
+    axon_origination_df = axon_df[axon_df['parent_node_type'] != 2]
+    problem_nodes = axon_origination_df[
+        axon_origination_df["parent_distance"] > axon_origin_distance_threshold
+    ]
+
+    if not problem_nodes.empty:
+        axon_origin_distance_error['nodes_with_error'] = list(problem_nodes[['node_id', 'x', 'y', 'z']].itertuples(index=False, name=None))
+
+    return [axon_origin_distance_error]
+
+
 def orphan_node_check(df):
     """
     Identify nodes with missing or invalid parent assignments. This assumes that an orphaned

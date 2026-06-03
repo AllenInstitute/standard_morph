@@ -12,6 +12,7 @@ from importlib.metadata import version
 from standard_morph.tools import (
     soma_and_soma_children_qc,
     axon_origination_qc,
+    axon_origin_distance_qc,
     dendrite_origins_qc,
     orphan_node_check,
     node_degree_check,
@@ -47,6 +48,7 @@ class Standardizer:
         path_to_swc: Optional[str] = None,
         input_morphology_df: Optional[pd.DataFrame] = None,
         soma_children_distance_threshold: float = 50,
+        axon_origin_distance_threshold: float = 100,
         swc_separator: str = ' ',
         valid_filename_format: FilenameFormat = FilenameFormat.NONE,
         soma_mip_kwargs: dict = None,
@@ -60,6 +62,7 @@ class Standardizer:
             path_to_swc (Optional[str]): Path to SWC file. Required if no dataframe is passed.
             input_morphology_df (Optional[pd.DataFrame]): Input morphology dataframe.
             soma_children_distance_threshold (float): Distance threshold for soma children.
+            axon_origin_distance_threshold (float): Distance threshold for the axon origin node from its parent.
             swc_separator (str): Column separator in SWC file.
             valid_filename_format (FilenameFormat): Filename format validation option.
             soma_mip_kwargs (dict): Keyword arguments for get_soma_mip function.
@@ -72,6 +75,7 @@ class Standardizer:
         self.valid_filename_format = valid_filename_format
         self.soma_mip_kwargs = soma_mip_kwargs or {}
         self.soma_children_distance_threshold = soma_children_distance_threshold
+        self.axon_origin_distance_threshold = axon_origin_distance_threshold
         self.allow_soma_children_to_branch = allow_soma_children_to_branch
         self.write_all_tests_to_report = write_all_tests_to_report
          
@@ -167,7 +171,7 @@ class Standardizer:
         # Now read the SWC file as usual, ignoring the header lines (#)
         swc_df = pd.read_csv(
             self.path_to_swc,
-            delim_whitespace=True,
+            sep=r'\s+',
             comment="#",
             header=None,
             names=SWC_COLUMN_NAMES,
@@ -237,6 +241,7 @@ class Standardizer:
         """Run validation checks and build the report."""
         self._append_if_error(soma_and_soma_children_qc(self.morph_df, self.allow_soma_children_to_branch, self.soma_children_distance_threshold), self.write_all_tests_to_report)
         self._append_if_error(axon_origination_qc(self.morph_df) , self.write_all_tests_to_report)
+        self._append_if_error(axon_origin_distance_qc(self.morph_df, self.axon_origin_distance_threshold), self.write_all_tests_to_report)
         self._append_if_error(dendrite_origins_qc(self.morph_df), self.write_all_tests_to_report)
         self._append_if_error(orphan_node_check(self.morph_df), self.write_all_tests_to_report)
         self._append_if_error(node_degree_check(self.morph_df), self.write_all_tests_to_report)
