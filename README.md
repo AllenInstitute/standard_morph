@@ -6,13 +6,18 @@ Standard Morph is a Python library designed for processing and validating SWC fi
 
 # Installation
 
-coming soon:  
-pip install standard-morph  
+coming soon:
+pip install standard-morph
 
 For now:  
 git clone https://github.com/AllenInstitute/standard_morph.git   
 cd standard_morph    
-pip install .   
+pip install .
+
+
+# Release Maintenance
+
+Merged pull requests to `main` trigger the shared AllenNeuralDynamics uv release workflow. The reusable workflow updates `pyproject.toml` and `uv.lock`, commits the version bump, and pushes a `v<version>` tag.
 
 
 # Usage
