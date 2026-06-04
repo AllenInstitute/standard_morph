@@ -1,0 +1,20 @@
+name: Release
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-tag:
+    name: Bump version and tag
+    if: github.event.pull_request.merged == true
+    uses: AllenNeuralDynamics/.github/.github/workflows/release-bump-version-uv.yml@main
+    with:
+      default_branch: main
+      working-directory: "."
+    secrets:
+      repo-token: ${{ secrets.GITHUB_TOKEN }}
