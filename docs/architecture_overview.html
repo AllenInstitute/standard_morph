@@ -1,0 +1,528 @@
+<style>
+  :root {
+    --ground: #f4f6f7;
+    --panel: #ffffff;
+    --ink: #111a22;
+    --ink-soft: #33424e;
+    --muted: #5d6b76;
+    --faint: #8a97a1;
+    --line: #e0e6ea;
+    --line-strong: #cdd6dc;
+    --accent: #0b6e7a;
+    --accent-deep: #085a64;
+    --accent-soft: #e3f0f1;
+    --accent-tint: #f0f7f7;
+    --pass: #2f7d5b;
+    --pass-soft: #e7f2ec;
+    --fail: #b0402f;
+    --fail-soft: #f7e9e6;
+    --skip: #96721e;
+    --skip-soft: #f6efdc;
+    --maxw: 900px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SFMono-Regular", "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+
+  /* ---- rhythm ---- */
+  section { padding: 60px 0; border-top: 1px solid var(--line); }
+  section:first-of-type { border-top: 0; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 22px; height: 2px; background: var(--accent);
+    display: inline-block;
+  }
+
+  h1, h2, h3 { text-wrap: balance; line-height: 1.15; }
+  h2 { font-size: 30px; margin: 0 0 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 19px; margin: 0 0 6px; letter-spacing: -0.005em; }
+  p { margin: 0 0 16px; color: var(--ink-soft); }
+  p:last-child { margin-bottom: 0; }
+  .lead { font-size: 19px; color: var(--muted); max-width: 62ch; }
+
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+  :not(pre) > code {
+    background: var(--accent-tint);
+    color: var(--accent-deep);
+    padding: 0.08em 0.36em;
+    border-radius: 4px;
+    border: 1px solid var(--accent-soft);
+  }
+
+  /* ---- hero ---- */
+  .hero { padding: 78px 0 64px; border-top: 0; }
+  .hero h1 {
+    font-size: 52px;
+    letter-spacing: -0.025em;
+    margin: 0 0 20px;
+    font-weight: 700;
+  }
+  .hero h1 .thin { color: var(--muted); font-weight: 400; }
+  .hero .lead { font-size: 21px; color: var(--ink-soft); }
+  .thesis {
+    margin-top: 30px;
+    padding: 20px 24px;
+    background: var(--accent-tint);
+    border: 1px solid var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    font-size: 18px;
+    color: var(--accent-deep);
+  }
+  .thesis strong { color: var(--accent-deep); }
+
+  .statbar {
+    display: flex; flex-wrap: wrap; gap: 34px;
+    margin-top: 34px;
+  }
+  .statbar .stat .n {
+    font-family: var(--mono);
+    font-size: 30px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .statbar .stat .l {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--faint);
+    margin-top: 2px;
+  }
+
+  /* ---- before / after ---- */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .col {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 22px 24px;
+  }
+  .col .tag {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 12px;
+  }
+  .col.after { border-color: var(--accent-soft); background: var(--accent-tint); }
+  .col.after .tag { color: var(--accent); }
+  .col ul { margin: 0; padding-left: 18px; }
+  .col li { margin: 7px 0; color: var(--ink-soft); font-size: 15.5px; }
+
+  /* ---- pipeline diagram ---- */
+  .flow { display: flex; flex-direction: column; align-items: stretch; gap: 0; }
+  .node {
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .node .k {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--faint); margin-bottom: 5px;
+  }
+  .node .v { font-size: 15px; color: var(--ink-soft); }
+  .node .v b { color: var(--ink); font-weight: 600; }
+  .conn { height: 22px; width: 2px; background: var(--line-strong); margin: 0 auto; }
+
+  .phase {
+    border-radius: 10px; padding: 18px 20px;
+    border: 1px solid var(--accent-soft);
+    background: var(--accent-tint);
+  }
+  .phase.morph { border-color: var(--line-strong); background: #fafbfc; }
+  .phase .plabel {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent-deep);
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .phase.morph .plabel { color: var(--ink-soft); }
+  .phase .plabel span { color: var(--faint); letter-spacing: 0.04em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--panel); border: 1px solid var(--line-strong);
+    border-radius: 20px; padding: 5px 12px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .phase:not(.morph) .chip { border-color: var(--accent-soft); }
+
+  .branch { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .outcome {
+    border-radius: 9px; padding: 13px 16px; font-size: 14px;
+    border: 1px solid; line-height: 1.45;
+  }
+  .outcome .h {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 6px; font-weight: 600;
+  }
+  .outcome.build { background: var(--fail-soft); border-color: #ecccc6; color: #7f3225; }
+  .outcome.build .h { color: var(--fail); }
+  .outcome.topo { background: var(--skip-soft); border-color: #e8dcae; color: #715719; }
+  .outcome.topo .h { color: var(--skip); }
+
+  /* ---- concept table ---- */
+  .concepts { display: flex; flex-direction: column; gap: 0; }
+  .crow {
+    display: grid; grid-template-columns: 190px 1fr; gap: 24px;
+    padding: 18px 0; border-bottom: 1px solid var(--line);
+  }
+  .crow:last-child { border-bottom: 0; }
+  .crow .cname { font-weight: 600; color: var(--ink); }
+  .crow .cname .code { font-family: var(--mono); font-size: 13px; color: var(--accent-deep); display: block; margin-top: 2px; font-weight: 400; }
+  .crow .cdesc { color: var(--ink-soft); font-size: 15.5px; }
+
+  /* ---- decision cards ---- */
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 11px; padding: 22px 24px;
+  }
+  .card .num {
+    font-family: var(--mono); font-size: 12px; color: var(--accent);
+    letter-spacing: 0.08em;
+  }
+  .card h3 { margin-top: 6px; }
+  .card .why {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 14.5px; color: var(--muted);
+  }
+  .card .why b { color: var(--ink-soft); font-weight: 600; }
+
+  /* ---- metric status ---- */
+  .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .metric {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 9px; padding: 11px 14px;
+  }
+  .metric .id {
+    font-family: var(--mono); font-size: 12px; color: var(--faint);
+    width: 24px; text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .metric .mn { font-family: var(--mono); font-size: 13.5px; color: var(--ink); }
+  .metric .md { font-size: 12.5px; color: var(--muted); margin-left: auto; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pass); flex: none; }
+
+  .integ { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .ichip {
+    font-family: var(--mono); font-size: 12.5px;
+    padding: 6px 12px; border-radius: 7px;
+    border: 1px solid var(--accent-soft); background: var(--accent-tint);
+    color: var(--accent-deep);
+  }
+  .ichip .sc { color: var(--faint); font-size: 10.5px; letter-spacing: 0.05em; }
+
+  .subhead {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--faint); margin: 26px 0 12px;
+  }
+
+  /* ---- roadmap ---- */
+  .road { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .road .grp .gh {
+    font-weight: 600; color: var(--ink); font-size: 15px; margin-bottom: 8px;
+  }
+  .road .grp .gh .badge {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--accent); margin-left: 8px;
+  }
+  .road ul { margin: 0; padding-left: 17px; }
+  .road li { font-size: 14px; color: var(--ink-soft); margin: 5px 0; }
+
+  footer {
+    padding: 40px 0 60px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12.5px; color: var(--faint);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  }
+
+  /* ---- load motion ---- */
+  @media (prefers-reduced-motion: no-preference) {
+    .fade { opacity: 0; transform: translateY(10px); animation: rise 0.6s cubic-bezier(.2,.7,.3,1) forwards; }
+    .fade.d1 { animation-delay: 0.06s; }
+    .fade.d2 { animation-delay: 0.12s; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+  }
+
+  @media (max-width: 720px) {
+    body { font-size: 16px; }
+    .hero h1 { font-size: 38px; }
+    .split, .cards, .mgrid, .road, .branch { grid-template-columns: 1fr; }
+    .crow { grid-template-columns: 1fr; gap: 4px; }
+    .statbar { gap: 24px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow fade">Architecture Overview · Standard Morph</p>
+    <h1 class="fade d1">Quality control for neuron reconstructions, <span class="thin">rebuilt as a modular engine.</span></h1>
+    <p class="lead fade d1">The overhaul replaces a single monolithic validator with a context-aware, two-phase QC engine behind one entrypoint — <code>run_qc()</code>. This is the design and the reasoning behind it.</p>
+
+    <div class="thesis fade d2">
+      The organizing idea: a QC tool should <strong>report what's wrong, not crash on it</strong>. A malformed SWC and a clean one flow through the same path and produce the same shape of report — one just names the failure and marks the un-runnable checks <code>skipped</code>.
+    </div>
+
+    <div class="statbar fade d2">
+      <div class="stat"><div class="n">12</div><div class="l">metrics live</div></div>
+      <div class="stat"><div class="n">108</div><div class="l">tests passing</div></div>
+      <div class="stat"><div class="n">2</div><div class="l">phases</div></div>
+      <div class="stat"><div class="n">17</div><div class="l">metric inventory</div></div>
+    </div>
+  </header>
+
+  <section>
+    <p class="eyebrow">The shift</p>
+    <h2>From one class to a composable framework</h2>
+    <p class="lead" style="margin-bottom:28px;">The old workflow still works — but the internals gained structure, context-awareness, and provenance.</p>
+    <div class="split">
+      <div class="col">
+        <div class="tag">Before · Standardizer</div>
+        <ul>
+          <li>Thresholds passed as constructor arguments</li>
+          <li>One fixed <code>validate()</code> sequence for every cell</li>
+          <li>No notion of coordinate space or when a check applies</li>
+          <li>Results as loose dicts — hard to trend or store</li>
+          <li>A malformed file threw an exception</li>
+        </ul>
+      </div>
+      <div class="col after">
+        <div class="tag">After · run_qc</div>
+        <ul>
+          <li>Versioned threshold <b>policies</b>, recorded in each report</li>
+          <li><b>Suites</b> and applicability decide what runs, in what order</li>
+          <li>Coordinate <b>space</b> drives which checks are valid</li>
+          <li>A structured, JSON-ready <b>RunReport</b></li>
+          <li>A malformed file yields a clean report, never a crash</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">The pipeline</p>
+    <h2>Two phases, one gate</h2>
+    <p class="lead" style="margin-bottom:30px;">Integrity checks read the raw table before a graph exists. Morphology checks read the built structure. A failure's <em>scope</em> decides what still runs.</p>
+
+    <div class="flow">
+      <div class="node">
+        <div class="k">Input + Context</div>
+        <div class="v"><b>SWC path · DataFrame · PreparedMorphology</b> &nbsp;+&nbsp; QCContext (space, morphology_kind, resources, ccf_resolution, policy)</div>
+      </div>
+      <div class="conn"></div>
+      <div class="node">
+        <div class="k">run_qc — resolve &amp; fail-fast</div>
+        <div class="v">Resolve the suite / metric list, then <b>validate applicability</b>. An incompatible request (e.g. a CCF check on an image-space cell) halts here with <code>IncompatibleMetricContextError</code>.</div>
+      </div>
+      <div class="conn"></div>
+
+      <div class="phase">
+        <div class="plabel">Phase 1 · Input integrity <span>reads the raw DataFrame</span></div>
+        <div class="chips">
+          <span class="chip">required_columns</span>
+          <span class="chip">non_empty</span>
+          <span class="chip">castable_columns</span>
+          <span class="chip">unique_node_ids</span>
+        </div>
+        <div class="branch">
+          <div class="outcome build">
+            <div class="h">Build-scope failure</div>
+            No arrays can be built (missing column, uncastable value) → <b>skip every</b> morphology metric.
+          </div>
+          <div class="outcome topo">
+            <div class="h">Topology-scope failure</div>
+            Builds fine but structure is suspect (duplicate ids) → skip only <b>topology-dependent</b> metrics; coordinate-only ones still run.
+          </div>
+        </div>
+      </div>
+      <div class="conn"></div>
+
+      <div class="phase morph">
+        <div class="plabel">Phase 2 · Morphology quality <span>reads PreparedMorphology</span></div>
+        <div class="chips">
+          <span class="chip">single_root_node</span>
+          <span class="chip">single_connected_component</span>
+          <span class="chip">branch_max_degree</span>
+          <span class="chip">local_tortuosity</span>
+          <span class="chip">soma_inside_ccf_mesh</span>
+          <span class="chip">nodes_outside_ccf_mesh</span>
+          <span class="chip">…</span>
+        </div>
+      </div>
+      <div class="conn"></div>
+      <div class="node" style="border-color:var(--accent-soft); background:var(--accent-tint);">
+        <div class="k" style="color:var(--accent);">Output</div>
+        <div class="v"><b>RunReport</b> — integrity_results + results + summary + <code>passed</code>; <code>to_dict()</code> is JSON-ready for a database or portal.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Core concepts</p>
+    <h2>Five moving parts</h2>
+    <div class="concepts">
+      <div class="crow">
+        <div class="cname">Context<span class="code">QCContext</span></div>
+        <div class="cdesc">Runtime metadata: coordinate <code>space</code>, <code>morphology_kind</code>, external <code>resources</code>, <code>ccf_resolution</code>, and <code>policy_version</code>. The user supplies the space; the pre-/post-registration stage is derived, never entered by hand.</div>
+      </div>
+      <div class="crow">
+        <div class="cname">Metric<span class="code">Metric</span></div>
+        <div class="cdesc">One QC check. Declares its <b>applicability</b> (spaces / kinds / resources), its <b>phase</b>, and — where relevant — its failure <b>scope</b> or topology need. Implements <code>evaluate(...) → MetricResult</code>. Self-registers on import.</div>
+      </div>
+      <div class="crow">
+        <div class="cname">Suite<span class="code">default_pre / post</span></div>
+        <div class="cdesc">A named, ordered list of metrics, mapped to the two coordinate spaces. Applicability is still enforced per-metric, so a mismatched suite fails fast rather than silently skipping.</div>
+      </div>
+      <div class="crow">
+        <div class="cname">Policy<span class="code">policy_v1</span></div>
+        <div class="cdesc">A versioned threshold dictionary. Metrics read thresholds from the policy, never the call site; the version is recorded in every report, so results stay reproducible and traceable.</div>
+      </div>
+      <div class="crow">
+        <div class="cname">Run report<span class="code">RunReport</span></div>
+        <div class="cdesc">The structured output: two result lists, a summary, and provenance. Every failing metric returns its <b>full</b> flagged-node list, and every summarisable metric a single headline <code>value</code> for trending.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Design decisions</p>
+    <h2>Six choices, and why</h2>
+    <div class="cards">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>Array-backed, not a graph object</h3>
+        <p style="font-size:15px;">The morphology is contiguous-indexed numpy arrays (<code>parent</code>, <code>xyz</code>, <code>compartment</code>) with derived adjacency and cached segments.</p>
+        <div class="why"><b>Why:</b> an SWC is a one-parent-per-node forest — the topology is one int per node. Reindexing gives O(1) lookups and vectorized geometry. <code>networkx</code> is too slow and memory-heavy at fMOST scale (10⁵–10⁶ nodes).</div>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>Two phases</h3>
+        <p style="font-size:15px;">Integrity metrics read the raw table before a graph is built; quality metrics read the built <code>PreparedMorphology</code>.</p>
+        <div class="why"><b>Why:</b> two different kinds of "wrong" — a malformed <em>table</em> vs. a malformed <em>neuron</em>. You can't run graph checks on a graph you couldn't build, but you shouldn't crash either.</div>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>Scoped blocking</h3>
+        <p style="font-size:15px;">Each integrity failure carries a scope — <code>BUILD</code> or <code>TOPOLOGY</code> — matched against each metric's <code>requires_topology</code>.</p>
+        <div class="why"><b>Why:</b> a duplicate id corrupts topology but not coordinates, so the fraction of nodes outside the CCF mesh is still computable. What broke, matched to what a metric needs, decides exactly what can still run.</div>
+      </div>
+      <div class="card">
+        <div class="num">04</div>
+        <h3>Applicability &amp; fail-fast</h3>
+        <p style="font-size:15px;">Every metric declares its valid spaces, kinds, and resources; an incompatible request halts before any work.</p>
+        <div class="why"><b>Why:</b> a post-registration check should never silently no-op on an image-space cell. Failing loudly beats a report that quietly omits a check.</div>
+      </div>
+      <div class="card">
+        <div class="num">05</div>
+        <h3>Versioned policies</h3>
+        <p style="font-size:15px;">Thresholds live in versioned definitions, recorded in every report; changing one means a version bump.</p>
+        <div class="why"><b>Why:</b> "what threshold produced this result?" must be answerable from the report alone, and threshold changes must be traceable and governed.</div>
+      </div>
+      <div class="card">
+        <div class="num">06</div>
+        <h3>One scalar per metric</h3>
+        <p style="font-size:15px;">Every summarisable metric sets <code>value</code> + <code>value_label</code> — a max, count, or fraction. Binary checks leave it <code>None</code>.</p>
+        <div class="why"><b>Why:</b> a QC portal wants one sortable, trendable column per check across thousands of cells. Full detail stays in <code>measurements</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Current status</p>
+    <h2>What's live today</h2>
+
+    <div class="subhead">Morphology-quality metrics · 8</div>
+    <div class="mgrid">
+      <div class="metric"><span class="dot"></span><span class="id">1</span><span class="mn">single_root_node</span><span class="md">one soma-root</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">16</span><span class="mn">single_connected_component</span><span class="md">one tree</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">17</span><span class="mn">branch_max_degree</span><span class="md">&gt;2 children</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">10</span><span class="mn">local_tortuosity</span><span class="md">sidestep / kinks</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">6</span><span class="mn">node_identity_types</span><span class="md">compartment codes</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">11</span><span class="mn">duplicate_node_coordinates</span><span class="md">shared xyz</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">2</span><span class="mn">soma_inside_ccf_mesh</span><span class="md">ccf</span></div>
+      <div class="metric"><span class="dot"></span><span class="id">3</span><span class="mn">nodes_outside_ccf_mesh</span><span class="md">ccf · fraction</span></div>
+    </div>
+
+    <div class="subhead">Input-integrity metrics · 4 &nbsp;(always run before building)</div>
+    <div class="integ">
+      <span class="ichip">required_columns <span class="sc">· BUILD</span></span>
+      <span class="ichip">non_empty <span class="sc">· BUILD</span></span>
+      <span class="ichip">castable_columns <span class="sc">· BUILD</span></span>
+      <span class="ichip">unique_node_ids <span class="sc">· TOPOLOGY</span></span>
+    </div>
+
+    <p style="margin-top:26px; font-size:15px;">The 10 µm Allen CCF annotation atlas is bundled and cached across cells. The package was flattened (<code>qc/</code> → <code>standard_morph/</code>) and the legacy <code>Standardizer</code> moved to <code>_archived/</code>.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">Roadmap</p>
+    <h2>Toward the full 17</h2>
+    <div class="road">
+      <div class="grp">
+        <div class="gh">Pure graph / geometry <span class="badge">buildable now</span></div>
+        <ul>
+          <li>4 &amp; 5 — pre / post-resampling edge length</li>
+          <li>13 — axon origin distance + valid parent-child origins</li>
+          <li>15 — node-type transition within a segment</li>
+        </ul>
+      </div>
+      <div class="grp">
+        <div class="gh">Needs a resource / convention</div>
+        <ul>
+          <li>7 — filename convention (needs the file name)</li>
+          <li>9 — root centered on soma <em>image</em> position (needs MIP)</li>
+          <li>14 — multiple apical origins (needs apical annotation)</li>
+        </ul>
+      </div>
+      <div class="grp">
+        <div class="gh">Needs algorithm design</div>
+        <ul>
+          <li>12 — duplicate segments / path overlays</li>
+          <li>2b / 3b — soma &amp; node distance-to-mesh scalars</li>
+        </ul>
+      </div>
+      <div class="grp">
+        <div class="gh">Framework</div>
+        <ul>
+          <li>Cycle / loops integrity check</li>
+          <li>QC-specific HTML / structured report adapters</li>
+          <li>Tune the tortuosity threshold; retire archived Standardizer</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Standard Morph · QC overhaul</span>
+    <span>branch: architecture/qc-overhaul</span>
+  </footer>
+
+</div>

@@ -1,8 +1,8 @@
 import unittest
 from pathlib import Path
 import pandas as pd
-from standard_morph.Standardizer import Standardizer
-from standard_morph.tools import axon_origination_qc, axon_origin_distance_qc
+from standard_morph._archived.Standardizer import Standardizer
+from standard_morph._archived.tools import axon_origination_qc, axon_origin_distance_qc
 
 
 class TestAxonOriginationQC(unittest.TestCase):
