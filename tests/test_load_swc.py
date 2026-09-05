@@ -1,7 +1,7 @@
 import os
 import unittest
 import pandas as pd
-from standard_morph.Standardizer import Standardizer  
+from standard_morph._archived.Standardizer import Standardizer  
 
 class TestHortaLoadSwc(unittest.TestCase):
 

@@ -1,0 +1,44 @@
+name: 'main - PR Close'
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+jobs:
+  merge_pr:
+    permissions: write-all
+    name: 'PR Merged'
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GH_ORG_PAT }}
+      - name: Git config
+        run: |
+          git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
+          git config --global user.name "${{ secrets.GH_ORG_NAME }}"
+      - name: Install bump-my-version and build
+        run: |
+          pip install bump-my-version build
+      - name: Apply version bump (major)
+        if: contains(github.event.pull_request.labels.*.name, 'major')
+        run: bump-my-version bump major
+      - name: Apply version bump (minor)
+        if: contains(github.event.pull_request.labels.*.name, 'minor')
+        run: bump-my-version bump minor
+      - name: Apply version bump (patch)
+        if: contains(github.event.pull_request.labels.*.name, 'patch')
+        run: bump-my-version bump patch
+      - name: Git push version bump
+        run: git push origin main --follow-tags
+      - name: Build distribution
+        run: python -m build
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          pip install twine
+          twine upload dist/*

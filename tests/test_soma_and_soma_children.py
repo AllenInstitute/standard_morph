@@ -1,7 +1,7 @@
 import unittest
 import warnings
 import pandas as pd
-from standard_morph.tools import soma_and_soma_children_qc
+from standard_morph._archived.tools import soma_and_soma_children_qc
 
 class TestSomaQC(unittest.TestCase):
 

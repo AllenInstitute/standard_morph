@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
-from standard_morph.Standardizer import Standardizer
-from standard_morph.tools import has_valid_name
+from standard_morph._archived.Standardizer import Standardizer
+from standard_morph._archived.tools import has_valid_name
 
 class TestStandardizer(unittest.TestCase):
 

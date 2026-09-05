@@ -1,8 +1,18 @@
 .bumpversion.cfg
 
+# Claude Code internal state
+.claude/
+
+# Personal scratch notebooks (qc_demo.ipynb is intentionally tracked)
+scratchbook.ipynb
+SharepointAPI.ipynb
+MergingSWCs.ipynb
+tests/delete.ipynb
+
 standard_morph/__pycache__/**
 *.pyc
-*.ipynb
+# notebooks: qc_demo.ipynb is tracked; others excluded above
+/linear_resampling.ipynb
 *.csv
 # *.swc
 .eggs/
@@ -40,5 +50,4 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-/linear_resampling.ipynb
-/.ipynb_checkpoints/
+**/.ipynb_checkpoints/
