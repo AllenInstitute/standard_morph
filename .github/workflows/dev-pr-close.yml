@@ -19,28 +19,26 @@ jobs:
         run: |
           git config --global user.email "${{ secrets.GH_ORG_EMAIL }}"
           git config --global user.name "${{ secrets.GH_ORG_NAME }}"
-      - name: Install bumpversion
+      - name: Install bump-my-version and build
         run: |
-          pip install bumpversion
+          pip install bump-my-version build
       - name: Apply version bump (major)
         if: contains(github.event.pull_request.labels.*.name, 'major')
-        run: bumpversion major
+        run: bump-my-version bump major
       - name: Apply version bump (minor)
         if: contains(github.event.pull_request.labels.*.name, 'minor')
-        run: bumpversion minor
+        run: bump-my-version bump minor
       - name: Apply version bump (patch)
         if: contains(github.event.pull_request.labels.*.name, 'patch')
-        run: bumpversion patch
+        run: bump-my-version bump patch
       - name: Git push version bump
-        run: git push origin main --follow-tags --force
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
-      - name: Build and publish
+        run: git push origin main --follow-tags
+      - name: Build distribution
+        run: python -m build
+      - name: Publish to PyPI
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-          python setup.py sdist bdist_wheel
+          pip install twine
           twine upload dist/*

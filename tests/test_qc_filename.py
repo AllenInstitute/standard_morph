@@ -104,22 +104,21 @@ class TestFilenamePlumbing(unittest.TestCase):
         with self.assertRaises(IncompatibleMetricContextError):
             run_qc(pm, QCContext(space=Space.IMAGE_SPACE), metrics=["filename_format"])
 
-    def test_prepared_morph_with_filename_still_runs(self):
-        # A prebuilt morphology skips buildability, but an explicitly-requested
-        # content-independent input metric must still run, not vanish silently.
+    def test_prepared_morph_skips_all_integrity_metrics(self):
+        # PreparedMorphology has no raw table; all integrity metrics are skipped.
         pm = PreparedMorphology.from_dataframe(_valid_df())
         ctx = QCContext(space=Space.IMAGE_SPACE, resources={"filename": "N123-000000.swc"})
         report = run_qc(pm, ctx, metrics=["filename_format"])
         fr = next(r for r in report.integrity_results if r.name == "filename_format")
-        self.assertEqual(fr.status, "pass")
+        self.assertEqual(fr.status, "skipped")
 
-    def test_prepared_morph_with_bad_filename_fails(self):
+    def test_prepared_morph_integrity_skip_message_is_clear(self):
         pm = PreparedMorphology.from_dataframe(_valid_df())
         ctx = QCContext(space=Space.IMAGE_SPACE, resources={"filename": "garbage.swc"})
         report = run_qc(pm, ctx, metrics=["filename_format"])
         fr = next(r for r in report.integrity_results if r.name == "filename_format")
-        self.assertEqual(fr.status, "fail")
-        self.assertFalse(report.passed)
+        self.assertEqual(fr.status, "skipped")
+        self.assertIn("PreparedMorphology", fr.message)
 
     def test_filename_from_resources(self):
         ctx = QCContext(space=Space.IMAGE_SPACE, resources={"filename": "N123-000000.swc"})

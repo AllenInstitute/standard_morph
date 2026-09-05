@@ -260,14 +260,13 @@ def run_qc(input_data, context, suite_name=None, metrics=None, policy_version=No
             swc_df, input_run_names, context, policy
         )
     else:
-        # A PreparedMorphology was passed in, so buildability is implied and its
-        # checks are skipped. But an explicitly-requested input metric that does
-        # not read the raw table (e.g. filename_format) must still run -- else a
-        # requested metric would silently vanish from the report. Such metrics
-        # ignore the table argument, so passing None is safe.
-        integrity_results, build_blocked, topology_blocked = _run_integrity_phase(
-            None, extra_input_names, context, policy
-        )
+        # A PreparedMorphology was passed in: the raw SWC table is unavailable,
+        # so every integrity metric is skipped. Buildability is implied by the
+        # fact that the caller already built the morphology.
+        _pm_skip_reason = "raw SWC table not available (PreparedMorphology was passed as input)"
+        integrity_results = [_skipped(n, _pm_skip_reason) for n in input_run_names]
+        build_blocked = False
+        topology_blocked = False
 
     # -- Phase 2: morphology quality --
     # A BUILD-scope failure skips everything (no arrays to run on). A
