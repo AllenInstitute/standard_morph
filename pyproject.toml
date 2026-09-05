@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "standard_morph"
-version = "0.1.0"
+version = "1.0.0"
 description = "Standardizing morphologies"
 readme = "README.md"
 authors = [{ name = "Matthew Mallory", email = "matt.mallory@alleninstitute.org" }]
@@ -33,7 +33,7 @@ test = ["pytest", "pynrrd"]
 Homepage = "https://github.com/AllenInstitute/standard_morph"
 
 [tool.bumpversion]
-current_version = "0.1.0"
+current_version = "1.0.0"
 commit = true
 tag = true
 
