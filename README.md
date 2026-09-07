@@ -19,15 +19,18 @@ A run resolves a suite (or explicit metric list), validates that every metric is
 ```
 git clone https://github.com/AllenInstitute/standard_morph.git
 cd standard_morph
+pip install ".[full]"
+```
+
+The `full` extra includes all optional dependencies (`pynrrd`, `imageio`, `s3fs`, `zarr`, `scikit-image`) and is the recommended starting point. If you need a minimal install, the core library requires only `numpy` and `pandas`:
+
+```
 pip install .
 ```
 
-ToDo: `pip install standard-morph`.
-
-Core QC requires only `numpy` and `pandas`. Some checks need extras:
+Available extras for selective installs:
 
 ```
-pip install ".[full]"       # all optional dependencies
 pip install ".[ccf]"        # pynrrd -- CCF atlas / brain-mesh checks
 pip install ".[soma-mip]"   # imageio, s3fs, zarr, scikit-image -- image-based checks
 pip install ".[test]"       # pytest
